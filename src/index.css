@@ -1,0 +1,274 @@
+@import "./style.css";
+
+/* Reset Canvas Background for full 3D Exploration */
+canvas {
+  pointer-events: auto !important;
+  outline: none;
+}
+
+/* React Root Layout */
+#root {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Preloader & Title Screen pointer events */
+#preloader {
+  pointer-events: auto !important;
+}
+
+#preloader .game-btn {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  z-index: 100 !important;
+}
+
+/* Interactive Dialogue Box for Game Start */
+.dialogue-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  padding-bottom: 80px;
+  z-index: 80;
+  pointer-events: none;
+}
+
+.dialogue-box {
+  background: rgba(255, 255, 255, 0.95);
+  border: var(--border-thick);
+  border-radius: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25), var(--shadow-bouncy);
+  padding: 24px 40px;
+  width: 90%;
+  max-width: 650px;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.dialogue-title {
+  font-family: var(--font-title);
+  font-size: 1.8rem;
+  color: var(--color-primary-dark);
+  margin-bottom: 8px;
+}
+
+.dialogue-text {
+  font-family: var(--font-body);
+  font-size: 1.15rem;
+  line-height: 1.5;
+  color: var(--color-text);
+  margin-bottom: 20px;
+}
+
+.dialogue-btn-glow {
+  font-family: var(--font-title);
+  font-size: 1.2rem;
+  padding: 10px 24px;
+  background-color: var(--color-accent-pink);
+  color: white;
+  border: var(--border-medium);
+  border-radius: 16px;
+  box-shadow: 0 0 15px rgba(255, 112, 150, 0.6);
+  cursor: pointer;
+  animation: breatheGlow 1.5s infinite alternate ease-in-out;
+  transition: all 0.15s ease;
+}
+
+.dialogue-btn-glow:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 25px rgba(255, 112, 150, 0.9);
+  background-color: #ff5c8a;
+}
+
+@keyframes breatheGlow {
+  0% {
+    box-shadow: 0 0 8px rgba(255, 112, 150, 0.5);
+    transform: scale(0.98);
+  }
+  100% {
+    box-shadow: 0 0 20px rgba(255, 112, 150, 0.95);
+    transform: scale(1.02);
+  }
+}
+
+/* Modals Overlay with Framer Motion (Centering Fix) */
+.modal-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  background: rgba(15, 23, 42, 0.65) !important;
+  backdrop-filter: blur(8px) !important;
+  z-index: 95 !important;
+}
+
+.modal-overlay::before {
+  display: none !important;
+}
+
+.modal-card {
+  transform: none !important;
+  margin: auto !important;
+  width: 90% !important;
+  max-width: 850px !important;
+  max-height: 85vh !important;
+  background: #ffffff !important;
+  border: var(--border-thick) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35), var(--shadow-bouncy) !important;
+}
+
+/* Ensure interaction prompt stays centered */
+.interaction-prompt {
+  position: fixed;
+  bottom: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.prompt-badge {
+  background: var(--color-accent-pink);
+  border: var(--border-medium);
+  box-shadow: 2px 2px 0px #2b2d42;
+  color: white;
+  padding: 6px 16px;
+  border-radius: 12px;
+  font-family: var(--font-title);
+  font-size: 1rem;
+}
+
+.prompt-text {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.key-badge {
+  background: white;
+  color: var(--color-primary-dark);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: bold;
+  border: 1px solid #2b2d42;
+}
+
+/* Glowing books styling for Library building */
+.library-bookshelf {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.glowing-book {
+  background: #fdf0d5;
+  border: var(--border-medium);
+  border-radius: 14px;
+  padding: 15px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 2px 2px 0 #2b2d42;
+  position: relative;
+  overflow: hidden;
+}
+
+.glowing-book:hover {
+  transform: translateY(-5px) scale(1.03);
+  box-shadow: 4px 4px 0 #2b2d42, 0 0 15px rgba(244, 162, 97, 0.6);
+  border-color: var(--color-accent-orange);
+}
+
+.glowing-book.active {
+  background: var(--color-accent-orange);
+  color: white;
+  border-color: #2b2d42;
+  box-shadow: 3px 3px 0 #2b2d42;
+}
+
+.glowing-book-icon {
+  font-size: 2.2rem;
+  margin-bottom: 5px;
+  display: block;
+}
+
+.glowing-book-title {
+  font-family: var(--font-title);
+  font-size: 1.1rem;
+}
+
+.book-detail-card {
+  margin-top: 20px;
+  background: #fdf0d5;
+  border: var(--border-medium);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 3px 3px 0 #2b2d42;
+  animation: cardPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes cardPop {
+  0% { transform: scale(0.9); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Custom styles for HUD settings toggles */
+.hud-settings {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.hud-settings-btn {
+  background: white;
+  border: var(--border-medium);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary-dark);
+  box-shadow: 2px 2px 0px #2b2d42;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.hud-settings-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 3px 3px 0px #2b2d42;
+  background: #f0f0f0;
+}
+
+.hud-settings-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 0px 0px 0px #2b2d42;
+}
+
+/* Day/Night Transition Effects */
+.world-night-mode {
+  filter: saturate(0.85) contrast(1.05);
+  transition: filter 1.5s ease-in-out;
+}
