@@ -1048,23 +1048,24 @@ export class World {
   createTree(x, z, scale = 1.0) {
     const tree = new THREE.Group();
     tree.position.set(x, 0, z);
-    tree.scale.set(scale, scale, scale);
+    const effectiveScale = scale * 1.3;
+    tree.scale.set(effectiveScale, effectiveScale, effectiveScale);
 
-    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.32, 3.2, 8), this.materials.trunkBrown);
-    trunk.position.y = 1.6; trunk.castShadow = true; tree.add(trunk);
+    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.40, 5.5, 8), this.materials.trunkBrown);
+    trunk.position.y = 2.75; trunk.castShadow = true; tree.add(trunk);
 
     const leafMats = [this.materials.leafGreen, this.materials.leafLight, this.materials.leafDark];
     const leafMat = leafMats[Math.floor(Math.random() * leafMats.length)];
 
-    [[0, 1.8, 0, 1.2], [-0.6, 1.3, -0.4, 0.9], [0.6, 1.4, 0.4, 0.95], [0, 1.5, 0.6, 0.8]]
+    [[0, 2.8, 0, 1.4], [-0.7, 2.1, -0.5, 1.1], [0.7, 2.2, 0.5, 1.15], [0, 2.4, 0.7, 1.0]]
       .forEach(([lx, ly, lz, ls]) => {
-        const blob = new THREE.Mesh(new THREE.SphereGeometry(1.2, 12, 12), leafMat);
-        blob.position.set(lx, ly + 2.0, lz); blob.scale.setScalar(ls);
+        const blob = new THREE.Mesh(new THREE.SphereGeometry(1.4, 12, 12), leafMat);
+        blob.position.set(lx, ly + 2.8, lz); blob.scale.setScalar(ls);
         blob.castShadow = true; tree.add(blob);
       });
 
     this.scene.add(tree);
-    this.obstacles.push({ type: 'circle', x, z, radius: 0.6 * scale });
+    this.obstacles.push({ type: 'circle', x, z, radius: 0.6 * effectiveScale });
   }
 
   buildFoliageScatter() {

@@ -1,24 +1,24 @@
-/* CSS VARIABLES & CONSTANTS */
+/* CSS VARIABLES & CONSTANTS - SUNLIT FOREST COTTAGE VILLAGE THEME */
 :root {
-  --color-bg: #e2eafc;
-  --color-primary: #3d5a80;
-  --color-primary-dark: #2b2d42;
+  --color-bg: #d4eaf7;
+  --color-primary: #2d5a27;
+  --color-primary-dark: #1b3a17;
   --color-accent-pink: #ff7096;
-  --color-accent-orange: #f4a261;
-  --color-accent-green: #40916c;
-  --color-accent-blue: #4ea8de;
-  --color-card-bg: rgba(255, 255, 255, 0.85);
-  --color-text: #2b2d42;
-  --color-text-muted: #6c757d;
+  --color-accent-orange: #d97706;
+  --color-accent-green: #388e3c;
+  --color-accent-blue: #0284c7;
+  --color-card-bg: rgba(255, 255, 255, 0.92);
+  --color-text: #1c2d1b;
+  --color-text-muted: #4b6b48;
   
   --font-title: 'Fredoka', sans-serif;
   --font-body: 'Outfit', sans-serif;
   
-  --border-thick: 4px solid #2b2d42;
-  --border-medium: 3px solid #2b2d42;
-  --shadow-bouncy: 5px 5px 0px #2b2d42;
-  --shadow-bouncy-hover: 7px 7px 0px #2b2d42;
-  --shadow-bouncy-pressed: 2px 2px 0px #2b2d42;
+  --border-thick: 4px solid #1b3a17;
+  --border-medium: 3px solid #1b3a17;
+  --shadow-bouncy: 5px 5px 0px #1b3a17;
+  --shadow-bouncy-hover: 7px 7px 0px #1b3a17;
+  --shadow-bouncy-pressed: 2px 2px 0px #1b3a17;
 }
 
 /* GENERAL RESET & OVERALL SETUP */

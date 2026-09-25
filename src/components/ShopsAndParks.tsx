@@ -1,33 +1,25 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import * as THREE from 'three';
-import { getRoadX, getRoadAngle } from '../utils/roadPath';
+import { oakPlankTexture, stoneBrickTexture, cobblestoneTexture } from '../utils/minecraftTextures';
+import { getTerrainHeight, WATER_SURFACE_Y } from '../utils/terrain';
 
-// Module-level static materials
-const benchWoodMat = new THREE.MeshToonMaterial({ color: 0x8b5a2b });
-const benchMetalMat = new THREE.MeshToonMaterial({ color: 0x2b2d42 });
-const flowerBoxMat = new THREE.MeshToonMaterial({ color: 0x5c4033 });
-
-const flowerColorMats: Record<number, THREE.MeshToonMaterial> = {};
-function getFlowerMat(colorHex: number): THREE.MeshToonMaterial {
-  if (!flowerColorMats[colorHex]) {
-    flowerColorMats[colorHex] = new THREE.MeshToonMaterial({ color: colorHex });
-  }
-  return flowerColorMats[colorHex];
-}
+const benchWoodMat = new THREE.MeshStandardMaterial({ map: oakPlankTexture, roughness: 0.7, color: 0xc49a6c });
+const benchMetalMat = new THREE.MeshStandardMaterial({ color: 0x2b2d42, roughness: 0.5 });
+const stoneMat = new THREE.MeshStandardMaterial({ map: stoneBrickTexture, roughness: 0.8, color: 0x6e6055 });
+const cobbleMat = new THREE.MeshStandardMaterial({ map: cobblestoneTexture, roughness: 0.8, color: 0x7c7c82 });
+const umbrellaMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.4 });
+const woodPoleMat = new THREE.MeshStandardMaterial({ map: oakPlankTexture, roughness: 0.8 });
 
 // Voxel Minecraft park bench
 function Bench({ position, rotation = [0, 0, 0] }: { position: [number, number, number]; rotation?: [number, number, number] }) {
   return (
     <group position={position} rotation={rotation}>
-      {/* Seat slab */}
       <mesh castShadow position={[0, 0.38, 0]} material={benchWoodMat}>
         <boxGeometry args={[1.4, 0.08, 0.48]} />
       </mesh>
-      {/* Backrest slab */}
       <mesh castShadow position={[0, 0.72, -0.2]} rotation={[0.1, 0, 0]} material={benchWoodMat}>
         <boxGeometry args={[1.4, 0.32, 0.08]} />
       </mesh>
-      {/* Legs */}
       <mesh position={[-0.6, 0.2, 0]} material={benchMetalMat}>
         <boxGeometry args={[0.08, 0.4, 0.48]} />
       </mesh>
@@ -38,67 +30,79 @@ function Bench({ position, rotation = [0, 0, 0] }: { position: [number, number, 
   );
 }
 
-export default function ShopsAndParks({ isNight }: { isNight: boolean }) {
-  const flowerBeds = useMemo(() => {
-    const list: { p: [number, number, number]; c: number }[] = [];
-    const colors = [0xe63946, 0xffb703, 0x9b5de5, 0xff7096, 0x2a9d8f];
-
-    [15, 5, -5, -15, -25, -35].forEach((z, idx) => {
-      const rx = getRoadX(z);
-      const angle = getRoadAngle(z);
-      const perpX = Math.cos(angle);
-      const perpZ = -Math.sin(angle);
-
-      list.push({
-        p: [rx - perpX * 3.3, 0.1, z - perpZ * 3.3],
-        c: colors[idx % colors.length],
-      });
-      list.push({
-        p: [rx + perpX * 3.3, 0.1, z + perpZ * 3.3],
-        c: colors[(idx + 2) % colors.length],
-      });
-    });
-    return list;
-  }, []);
-
-  const benches = useMemo(() => {
-    const list: { p: [number, number, number]; rot: [number, number, number] }[] = [];
-
-    [16, 4, -8, -18, -28, -38].forEach((z, idx) => {
-      const rx = getRoadX(z);
-      const angle = getRoadAngle(z);
-      const perpX = Math.cos(angle);
-      const perpZ = -Math.sin(angle);
-
-      const side = idx % 2 === 0 ? -1 : 1;
-      list.push({
-        p: [rx + side * perpX * 3.3, 0, z + side * perpZ * 3.3],
-        rot: [0, angle + (side === -1 ? Math.PI / 2 : -Math.PI / 2), 0],
-      });
-    });
-    return list;
-  }, []);
-
+// 🚰 CENTER WELL COMPONENT (Center of Blueprint)
+function CenterWell({ position }: { position: [number, number, number] }) {
   return (
-    <group>
-      {/* Voxel Benches */}
-      {benches.map((b, idx) => (
-        <Bench key={idx} position={b.p} rotation={b.rot} />
+    <group position={position}>
+      {/* Circular Stone Wall Basin */}
+      <mesh castShadow receiveShadow position={[0, 0.6, 0]} material={stoneMat}>
+        <cylinderGeometry args={[1.8, 2.0, 1.2, 16]} />
+      </mesh>
+      {/* Water Inside Basin */}
+      <mesh position={[0, 0.9, 0]}>
+        <cylinderGeometry args={[1.5, 1.5, 0.1, 16]} />
+        <meshStandardMaterial color={0x2b7da8} roughness={0.1} />
+      </mesh>
+      {/* Wooden Support Posts */}
+      {[-1.3, 1.3].map((x, idx) => (
+        <mesh key={idx} position={[x, 1.8, 0]} material={woodPoleMat} castShadow>
+          <boxGeometry args={[0.22, 2.4, 0.22]} />
+        </mesh>
       ))}
-
-      {/* Voxel Flower Bed Boxes */}
-      {flowerBeds.map((fb, idx) => (
-        <group key={idx} position={fb.p}>
-          <mesh castShadow receiveShadow material={flowerBoxMat}>
-            <boxGeometry args={[1.2, 0.2, 0.8]} />
-          </mesh>
-          {[-0.35, 0, 0.35].map((x, fIdx) => (
-            <mesh key={fIdx} position={[x, 0.15, 0]} castShadow material={getFlowerMat(fb.c)}>
-              <boxGeometry args={[0.2, 0.2, 0.2]} />
-            </mesh>
-          ))}
-        </group>
-      ))}
+      {/* Cross Beam & Pulley */}
+      <mesh position={[0, 2.9, 0]} material={woodPoleMat} castShadow>
+        <boxGeometry args={[2.8, 0.2, 0.2]} />
+      </mesh>
+      {/* Wooden Roof Canopy */}
+      <mesh position={[0, 3.4, 0]} material={benchWoodMat} castShadow rotation={[0, Math.PI / 4, 0]}>
+        <coneGeometry args={[2.2, 1.0, 4]} />
+      </mesh>
     </group>
   );
 }
+
+// 🏖️ RECREATION POND DOCK & UMBRELLA (South Center of Blueprint)
+function RecreationPondDeck({ position }: { position: [number, number, number] }) {
+  return (
+    <group position={position}>
+      {/* Wooden Dock Platform extending into Pond */}
+      <mesh castShadow receiveShadow position={[0, 0.1, 0]} material={benchWoodMat}>
+        <boxGeometry args={[3.2, 0.16, 2.4]} />
+      </mesh>
+      {/* Deck Pilings */}
+      {[-1.4, 1.4].map((x, i) => (
+        <mesh key={i} position={[x, -0.4, 1.0]} material={woodPoleMat} castShadow>
+          <cylinderGeometry args={[0.12, 0.12, 1.0, 8]} />
+        </mesh>
+      ))}
+      {/* Sun Umbrella */}
+      <group position={[0.8, 0.1, 0]}>
+        <mesh position={[0, 1.4, 0]} material={woodPoleMat} castShadow>
+          <cylinderGeometry args={[0.06, 0.06, 2.8, 8]} />
+        </mesh>
+        <mesh position={[0, 2.6, 0]} material={umbrellaMat} castShadow>
+          <coneGeometry args={[1.5, 0.6, 8]} />
+        </mesh>
+      </group>
+    </group>
+  );
+}
+
+export default function ShopsAndParks({ isNight }: { isNight: boolean }) {
+  return (
+    <group>
+      {/* 🚰 Center Well Plaza Centerpiece (X:0, Z:0) */}
+      <CenterWell position={[0, getTerrainHeight(0, 0), 0]} />
+
+      {/* Plaza Park Benches */}
+      <Bench position={[-3.2, getTerrainHeight(-3.2, 0), 0]} rotation={[0, Math.PI / 2, 0]} />
+      <Bench position={[3.2, getTerrainHeight(3.2, 0), 0]} rotation={[0, -Math.PI / 2, 0]} />
+      <Bench position={[0, getTerrainHeight(0, -3.2), -3.2]} rotation={[0, 0, 0]} />
+
+      {/* 🏖️ Recreation Pond Deck & Umbrella */}
+      <RecreationPondDeck position={[-8, WATER_SURFACE_Y, 21.0]} />
+    </group>
+  );
+}
+
+

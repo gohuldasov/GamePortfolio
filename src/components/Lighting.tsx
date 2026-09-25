@@ -68,28 +68,28 @@ export default function Lighting({ isNight }: LightingProps) {
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}
         shadow-camera-near={0.5}
-        shadow-camera-far={120}
-        shadow-camera-left={-30}
-        shadow-camera-right={30}
-        shadow-camera-top={30}
-        shadow-camera-bottom={-30}
+        shadow-camera-far={260}
+        shadow-camera-left={-125}
+        shadow-camera-right={125}
+        shadow-camera-top={125}
+        shadow-camera-bottom={-125}
         shadow-bias={-0.0005}
       />
 
-      {/* Blocky Square Minecraft Sun / Moon in the Sky */}
+      {/* Celestial Sun / Moon in the Sky */}
       <mesh ref={sunMeshRef} position={[20, 45, 15]} material={isNight ? moonMaterial : sunMaterial}>
-        <boxGeometry args={[5.5, 5.5, 0.4]} />
+        <sphereGeometry args={[3.2, 16, 16]} />
       </mesh>
 
       {isNight && (
-        <Stars 
-          radius={100} 
-          depth={50} 
-          count={4000} 
-          factor={4} 
-          saturation={0} 
-          fade 
-          speed={1} 
+        <Stars
+          radius={100}
+          depth={50}
+          count={4000}
+          factor={4}
+          saturation={0}
+          fade
+          speed={1}
         />
       )}
     </>

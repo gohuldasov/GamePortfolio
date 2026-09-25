@@ -1,20 +1,23 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { RigidBody, CapsuleCollider } from '@react-three/rapier';
+import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { getRoadX, getRoadAngle, getRoadPerp } from '../utils/roadPath';
+import { getTerrainHeight } from '../utils/terrain';
 
 interface PlayerProps {
   gameState: 'loading' | 'title' | 'dialogue' | 'explore';
   playerRef: React.RefObject<THREE.Group | null>;
   setProximityText: (text: string | null) => void;
   currentModal: string | null;
+  isArcheryMode?: boolean;
 }
 
 // Shared Player Procedural Materials (Module scope to avoid GC churn)
 const materials = {
-  skin: new THREE.MeshToonMaterial({ color: 0xfcc4b6 }),
-  hair: new THREE.MeshToonMaterial({ color: 0x3a1f0a }),  // Dark brown messy hair
+  skin: new THREE.MeshToonMaterial({ color: 0xffdbac }),  // Natural warm human skin tone
+  hair: new THREE.MeshToonMaterial({ color: 0x2c1d11 }),  // Modern dark brown styled hair
   shirt: new THREE.MeshToonMaterial({ color: 0x1a4a8a }),  // Deep ocean blue hoodie
   shirtInner: new THREE.MeshToonMaterial({ color: 0xdde8f8 }),  // Light blue inner collar
   pants: new THREE.MeshToonMaterial({ color: 0x2c3a50 }),  // Dark navy jeans
@@ -23,15 +26,15 @@ const materials = {
   laces: new THREE.MeshToonMaterial({ color: 0xc49a6c }),  // Tan laces
   belt: new THREE.MeshToonMaterial({ color: 0x3a2010 }),  // Dark leather belt
   buckle: new THREE.MeshToonMaterial({ color: 0xc8a84b }),  // Gold buckle
-  eyes: new THREE.MeshToonMaterial({ color: 0xffffff }),
-  iris: new THREE.MeshToonMaterial({ color: 0x5a3010 }),
-  pupil: new THREE.MeshBasicMaterial({ color: 0x0a0a0a }),
+  eyes: new THREE.MeshBasicMaterial({ color: 0xffffff }),
+  iris: new THREE.MeshBasicMaterial({ color: 0x2b5c8f }),  // Expressive blue-grey eyes
+  pupil: new THREE.MeshBasicMaterial({ color: 0x111111 }),
   backpack: new THREE.MeshToonMaterial({ color: 0x7a5230 }),  // Mid-brown leather pack
   backpackDark: new THREE.MeshToonMaterial({ color: 0x4a3020 }),  // Dark brown straps
   backpackGold: new THREE.MeshToonMaterial({ color: 0xc8a84b }),  // Gold clasps
 };
 
-export default function Player({ gameState, playerRef, setProximityText, currentModal }: PlayerProps) {
+export default function Player({ gameState, playerRef, setProximityText, currentModal, isArcheryMode }: PlayerProps) {
   const { camera } = useThree();
   const rbRef = useRef<any>(null);
   
@@ -134,44 +137,39 @@ export default function Player({ gameState, playerRef, setProximityText, current
     const position = rbRef.current.translation();
     const velocity = rbRef.current.linvel();
 
-    // Reset position if fell off world
-    if (position.y < -15) {
-      rbRef.current.setTranslation({ x: 0, y: 1, z: 25 }, true);
+    // Reset position if fell off world or launched into sky by collision
+    const groundY = getTerrainHeight(position.x, position.z);
+    if (position.y < groundY - 5 || position.y > groundY + 30 || isNaN(position.y)) {
+      rbRef.current.setTranslation({ x: -18, y: getTerrainHeight(-18, 54) + 1.0, z: 54 }, true);
       rbRef.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
       return;
     }
 
-    // 2. Check Proximity to Portfolio Buildings along the curved road
+    // 2. Check Proximity to Portfolio Buildings & Mini-Games (Blueprint Positions)
     const buildingConfigs = [
-      { name: "Home", z: 20, side: 'left' },
-      { name: "School", z: 10, side: 'right' },
-      { name: "Computer Center", z: 0, side: 'right' },
-      { name: "AI Laboratory", z: -10, side: 'left' },
-      { name: "Workshop", z: -20, side: 'left' },
-      { name: "Library", z: -30, side: 'right' },
-      { name: "Company Headquarters", z: -40, side: 'left' },
+      { name: "About Me", bx: -42, bz: -42 },
+      { name: "Education", bx: 8, bz: -36 },
+      { name: "Skills", bx: 44, bz: -8 },
+      { name: "Projects", bx: -42, bz: -10 },
+      { name: "Experience", bx: -42, bz: 25 },
+      { name: "Developer Workshop", bx: 38, bz: 18 },
+      { name: "Contact", bx: 44, bz: -56 },
+      { name: "Archery Range", bx: 18, bz: -36 },
     ];
 
     let nearestBuilding: string | null = null;
-    let minDist = 6.0; // Approaching range
+    let minDist = 6.5; // Approaching range
 
     buildingConfigs.forEach(b => {
-      const rx = getRoadX(b.z);
-      const [nx, nz] = getRoadPerp(b.z);
-      const sign = b.side === 'right' ? 1 : -1;
-
-      const bx = rx + sign * nx * 9.0;
-      const bz = b.z + sign * nz * 9.0;
-
-      const dist = Math.sqrt((position.x - bx) ** 2 + (position.z - bz) ** 2);
+      const dist = Math.sqrt((position.x - b.bx) ** 2 + (position.z - b.bz) ** 2);
       if (dist < minDist) {
         minDist = dist;
         nearestBuilding = b.name;
       }
     });
 
-    if (currentModal) {
-      setProximityText(null); // Clear prompt while modal is active
+    if (currentModal || isArcheryMode) {
+      setProximityText(null); // Clear prompt while modal or archery mode is active
     } else {
       setProximityText(nearestBuilding);
     }
@@ -182,7 +180,7 @@ export default function Player({ gameState, playerRef, setProximityText, current
     
     maxSpeed.current = keys.shift ? 7.2 : 4.2;
 
-    if (gameState === 'explore' && !currentModal && (keys.w || keys.s || keys.a || keys.d)) {
+    if (gameState === 'explore' && !currentModal && !isArcheryMode && (keys.w || keys.s || keys.a || keys.d)) {
       // Calculate movement vector relative to camera rotation
       const camForward = new THREE.Vector3();
       state.camera.getWorldDirection(camForward);
@@ -323,220 +321,229 @@ export default function Player({ gameState, playerRef, setProximityText, current
     <RigidBody
       ref={rbRef}
       type="dynamic"
-      position={[0, 1.0, 25]} // Start at the beginning of the brick road (z = 25)
+      position={[-18, getTerrainHeight(-18, 54) + 1.0, 54]} // Spawn at South Bridge entrance of enlarged village
       enabledRotations={[false, false, false]} // Lock physical tumbling
       colliders={false}
     >
       {/* Visual Mesh container group */}
       <group ref={playerRef as any}>
+        {/* Floating 3D Speech Bubble */}
+        {gameState === 'dialogue' && (
+          <Html position={[0, 2.2, 0]} center distanceFactor={10} style={{ pointerEvents: 'none' }}>
+            <div className="r3f-dialogue-bubble">
+              <div className="bubble-text">"Hi, I'm Gohul."</div>
+              <div className="bubble-tail" />
+            </div>
+          </Html>
+        )}
         <group scale={0.9}>
           {/* Torso (Pivot center bottom) */}
           <group ref={torsoGroupRef} position={[0, 1.25, 0]}>
-            {/* Voxel Hoodie Torso */}
+            {/* Stylized Hoodie Torso (Chest & Waist) */}
             <mesh castShadow receiveShadow material={materials.shirt}>
-              <boxGeometry args={[0.55, 0.75, 0.35]} />
+              <capsuleGeometry args={[0.26, 0.52, 10, 16]} />
             </mesh>
 
-            {/* Voxel Inner T-Shirt Collar */}
-            <mesh position={[0, 0.38, 0]} material={materials.shirtInner}>
-              <boxGeometry args={[0.2, 0.05, 0.2]} />
+            {/* Inner Collar & Neck Sleeve Bridge */}
+            <mesh position={[0, 0.28, 0]} material={materials.shirtInner}>
+              <cylinderGeometry args={[0.11, 0.14, 0.12, 12]} />
             </mesh>
 
-            {/* Voxel Lapels */}
-            <mesh position={[-0.16, 0.25, 0.18]} rotation={[0.1, 0.1, -0.1]} material={materials.shirt}>
-              <boxGeometry args={[0.12, 0.18, 0.04]} />
-            </mesh>
-            <mesh position={[0.16, 0.25, 0.18]} rotation={[0.1, -0.1, 0.1]} material={materials.shirt}>
-              <boxGeometry args={[0.12, 0.18, 0.04]} />
+            {/* Pelvis / Hips Base (Bridges Torso seamlessly to Legs) */}
+            <mesh position={[0, -0.3, 0]} material={materials.pants}>
+              <cylinderGeometry args={[0.25, 0.24, 0.14, 12]} />
             </mesh>
 
-            {/* Voxel Buttons */}
-            {[-0.03, 0.15, -0.21].map((y, idx) => (
-              <mesh key={idx} position={[0, y, 0.18]} material={materials.shirtInner}>
-                <boxGeometry args={[0.03, 0.03, 0.03]} />
-              </mesh>
-            ))}
-
-            {/* Voxel Belt */}
-            <mesh position={[0, -0.36, 0]} material={materials.belt}>
-              <boxGeometry args={[0.57, 0.08, 0.37]} />
+            {/* Belt & Buckle */}
+            <mesh position={[0, -0.26, 0]} material={materials.belt}>
+              <cylinderGeometry args={[0.27, 0.27, 0.07, 12]} />
             </mesh>
-            <mesh position={[0, -0.36, 0.19]} material={materials.buckle}>
-              <boxGeometry args={[0.12, 0.1, 0.04]} />
+            <mesh position={[0, -0.26, 0.27]} material={materials.buckle}>
+              <boxGeometry args={[0.1, 0.09, 0.04]} />
             </mesh>
 
-            {/* Voxel Hoodie Hood back */}
-            <mesh position={[0, 0.35, -0.2]} material={materials.shirt}>
-              <boxGeometry args={[0.45, 0.35, 0.12]} />
-            </mesh>
-
-            {/* Voxel Leather Backpack */}
-            <group position={[0, 0.08, -0.28]}>
-              {/* Main pouch */}
+            {/* Leather Backpack */}
+            <group position={[0, 0.06, -0.26]}>
               <mesh castShadow material={materials.backpack}>
-                <boxGeometry args={[0.42, 0.52, 0.18]} />
+                <boxGeometry args={[0.42, 0.48, 0.18]} />
               </mesh>
-              {/* Pocket */}
               <mesh castShadow position={[0, -0.12, -0.11]} material={materials.backpack}>
                 <boxGeometry args={[0.28, 0.2, 0.05]} />
               </mesh>
-              {/* Gold buckle strip */}
               <mesh position={[0, 0, -0.14]} material={materials.backpackGold}>
                 <boxGeometry args={[0.24, 0.02, 0.03]} />
               </mesh>
-              {/* Handle */}
-              <mesh position={[0, 0.28, -0.04]} material={materials.backpackDark}>
-                <boxGeometry args={[0.12, 0.04, 0.04]} />
-              </mesh>
-              {/* Straps */}
-              {[-0.15, 0.15].map((sx, idx) => (
-                <mesh key={idx} position={[sx, 0, -0.1]} material={materials.backpackDark}>
-                  <boxGeometry args={[0.05, 0.48, 0.03]} />
-                </mesh>
-              ))}
             </group>
-            {/* Shoulder straps */}
-            {[-0.18, 0.18].map((sx, idx) => (
-              <mesh key={idx} position={[sx, 0.04, 0.18]} material={materials.backpackDark}>
-                <boxGeometry args={[0.05, 0.65, 0.03]} />
-              </mesh>
-            ))}
-            {/* Gold strap buckles */}
-            {[-0.18, 0.18].map((sx, idx) => (
-              <mesh key={idx} position={[sx, -0.12, 0.19]} material={materials.backpackGold}>
-                <boxGeometry args={[0.06, 0.05, 0.04]} />
-              </mesh>
-            ))}
 
-            {/* Head (neck joint pivot) */}
-            <group ref={headGroupRef} position={[0, 0.48, 0]}>
-              <mesh position={[0, -0.075, 0]} material={materials.skin}>
-                <boxGeometry args={[0.16, 0.15, 0.16]} />
+            {/* Head & Face Assembly (Stylized Modern 3D Human) */}
+            <group ref={headGroupRef} position={[0, 0.44, 0]}>
+              {/* Neck Joint */}
+              <mesh position={[0, -0.05, 0]} material={materials.skin}>
+                <cylinderGeometry args={[0.08, 0.09, 0.12, 12]} />
               </mesh>
-              <mesh castShadow position={[0, 0.2, 0]} material={materials.skin}>
-                <boxGeometry args={[0.5, 0.5, 0.5]} />
+              
+              {/* Main Human Head (Smooth rounded contour) */}
+              <mesh castShadow position={[0, 0.22, 0]} material={materials.skin} scale={[1.0, 1.1, 0.95]}>
+                <sphereGeometry args={[0.22, 24, 24]} />
               </mesh>
 
-              {/* Eyes Left */}
-              <group position={[-0.13, 0.22, 0.26]}>
-                <mesh material={materials.eyes}>
-                  <boxGeometry args={[0.08, 0.08, 0.01]} />
+              {/* Natural Human Ears */}
+              <mesh position={[-0.21, 0.21, 0]} rotation={[0, -0.15, -0.1]} material={materials.skin}>
+                <boxGeometry args={[0.03, 0.07, 0.04]} />
+              </mesh>
+              <mesh position={[0.21, 0.21, 0]} rotation={[0, 0.15, 0.1]} material={materials.skin}>
+                <boxGeometry args={[0.03, 0.07, 0.04]} />
+              </mesh>
+
+              {/* Left Eye */}
+              <group position={[-0.08, 0.23, 0.19]}>
+                <mesh material={materials.eyes} scale={[1.0, 1.2, 0.2]}>
+                  <sphereGeometry args={[0.038, 12, 12]} />
                 </mesh>
-                <mesh position={[0, 0, 0.01]} material={materials.iris}>
-                  <boxGeometry args={[0.04, 0.04, 0.01]} />
+                <mesh position={[0, 0, 0.008]} material={materials.iris} scale={[1.0, 1.1, 0.2]}>
+                  <sphereGeometry args={[0.024, 10, 10]} />
                 </mesh>
-                <mesh position={[0, 0, 0.02]} material={materials.pupil}>
-                  <boxGeometry args={[0.02, 0.02, 0.01]} />
+                <mesh position={[0, 0, 0.012]} material={materials.pupil} scale={[1.0, 1.0, 0.2]}>
+                  <sphereGeometry args={[0.014, 8, 8]} />
+                </mesh>
+                <mesh position={[0.008, 0.008, 0.015]} material={materials.eyes}>
+                  <sphereGeometry args={[0.006, 6, 6]} />
                 </mesh>
               </group>
 
-              {/* Eyes Right */}
-              <group position={[0.13, 0.22, 0.26]}>
-                <mesh material={materials.eyes}>
-                  <boxGeometry args={[0.08, 0.08, 0.01]} />
+              {/* Right Eye */}
+              <group position={[0.08, 0.23, 0.19]}>
+                <mesh material={materials.eyes} scale={[1.0, 1.2, 0.2]}>
+                  <sphereGeometry args={[0.038, 12, 12]} />
                 </mesh>
-                <mesh position={[0, 0, 0.01]} material={materials.iris}>
-                  <boxGeometry args={[0.04, 0.04, 0.01]} />
+                <mesh position={[0, 0, 0.008]} material={materials.iris} scale={[1.0, 1.1, 0.2]}>
+                  <sphereGeometry args={[0.024, 10, 10]} />
                 </mesh>
-                <mesh position={[0, 0, 0.02]} material={materials.pupil}>
-                  <boxGeometry args={[0.02, 0.02, 0.01]} />
+                <mesh position={[0, 0, 0.012]} material={materials.pupil} scale={[1.0, 1.0, 0.2]}>
+                  <sphereGeometry args={[0.014, 8, 8]} />
+                </mesh>
+                <mesh position={[-0.008, 0.008, 0.015]} material={materials.eyes}>
+                  <sphereGeometry args={[0.006, 6, 6]} />
                 </mesh>
               </group>
 
               {/* Eyebrows */}
-              <mesh position={[-0.13, 0.31, 0.26]} material={materials.hair}>
-                <boxGeometry args={[0.1, 0.03, 0.02]} />
+              <mesh position={[-0.08, 0.285, 0.195]} rotation={[0, 0, 0.06]} material={materials.hair}>
+                <boxGeometry args={[0.06, 0.012, 0.015]} />
               </mesh>
-              <mesh position={[0.13, 0.31, 0.26]} material={materials.hair}>
-                <boxGeometry args={[0.1, 0.03, 0.02]} />
-              </mesh>
-
-              {/* Nose */}
-              <mesh position={[0, 0.12, 0.26]} material={materials.skin}>
-                <boxGeometry args={[0.06, 0.06, 0.03]} />
+              <mesh position={[0.08, 0.285, 0.195]} rotation={[0, 0, -0.06]} material={materials.hair}>
+                <boxGeometry args={[0.06, 0.012, 0.015]} />
               </mesh>
 
-              {/* Voxel Smile */}
-              <mesh position={[0, 0.04, 0.26]} material={materials.pupil}>
-                <boxGeometry args={[0.12, 0.03, 0.02]} />
+              {/* Small Cute Nose */}
+              <mesh position={[0, 0.19, 0.21]} material={materials.skin}>
+                <boxGeometry args={[0.025, 0.045, 0.025]} />
               </mesh>
 
-              {/* Ears */}
-              <mesh position={[-0.27, 0.2, 0]} material={materials.skin}>
-                <boxGeometry args={[0.04, 0.1, 0.08]} />
-              </mesh>
-              <mesh position={[0.27, 0.2, 0]} material={materials.skin}>
-                <boxGeometry args={[0.04, 0.1, 0.08]} />
+              {/* Friendly Mouth */}
+              <mesh position={[0, 0.13, 0.20]} material={materials.hair}>
+                <boxGeometry args={[0.06, 0.01, 0.01]} />
               </mesh>
 
-              {/* Voxel Hair Blocks */}
-              <group ref={hairGroupRef}>
-                {/* Top cap */}
-                <mesh position={[0, 0.46, 0]} material={materials.hair}>
-                  <boxGeometry args={[0.54, 0.1, 0.54]} />
+              {/* Stylish Modern Layered Haircut */}
+              <group ref={hairGroupRef} position={[0, 0.23, -0.01]}>
+                {/* Hair Top Cap */}
+                <mesh material={materials.hair} position={[0, 0.04, -0.02]}>
+                  <sphereGeometry args={[0.235, 16, 16]} />
                 </mesh>
-                {/* Back hair */}
-                <mesh position={[0, 0.15, -0.22]} material={materials.hair}>
-                  <boxGeometry args={[0.54, 0.3, 0.12]} />
+                {/* Front Swept Hair Bangs */}
+                <mesh position={[-0.05, 0.11, 0.13]} rotation={[0.1, 0.1, -0.15]} material={materials.hair}>
+                  <boxGeometry args={[0.18, 0.08, 0.14]} />
                 </mesh>
-                {/* Side burns */}
-                <mesh position={[-0.27, 0.2, 0.05]} material={materials.hair}>
-                  <boxGeometry args={[0.04, 0.2, 0.35]} />
+                <mesh position={[0.07, 0.10, 0.13]} rotation={[0.1, -0.1, 0.15]} material={materials.hair}>
+                  <boxGeometry args={[0.14, 0.07, 0.12]} />
                 </mesh>
-                <mesh position={[0.27, 0.2, 0.05]} material={materials.hair}>
-                  <boxGeometry args={[0.04, 0.2, 0.35]} />
+                {/* Sideburns */}
+                <mesh position={[-0.20, 0.04, 0.04]} material={materials.hair}>
+                  <boxGeometry args={[0.025, 0.1, 0.05]} />
                 </mesh>
-                {/* Fringe bangs */}
-                <mesh position={[0, 0.41, 0.22]} material={materials.hair}>
-                  <boxGeometry args={[0.54, 0.1, 0.12]} />
+                <mesh position={[0.20, 0.04, 0.04]} material={materials.hair}>
+                  <boxGeometry args={[0.025, 0.1, 0.05]} />
                 </mesh>
               </group>
             </group>
 
-            {/* Left Arm (Shoulder Pivot) */}
-            <group ref={leftArmPivotRef} position={[-0.42, 0.25, 0]}>
-              <mesh position={[0, -0.2, 0]} material={materials.shirt}>
-                <boxGeometry args={[0.18, 0.4, 0.18]} />
+            {/* Left Arm & Shoulder Joint */}
+            <group ref={leftArmPivotRef} position={[-0.27, 0.2, 0]}>
+              {/* Shoulder Ball Joint (Connects directly into Torso Seam) */}
+              <mesh material={materials.shirt}>
+                <sphereGeometry args={[0.11, 10, 10]} />
               </mesh>
-              <mesh castShadow position={[0, -0.45, 0]} material={materials.skin}>
-                <boxGeometry args={[0.14, 0.3, 0.14]} />
+              {/* Upper Arm Sleeve */}
+              <mesh castShadow position={[0, -0.22, 0]} material={materials.shirt}>
+                <capsuleGeometry args={[0.09, 0.36, 8, 12]} />
               </mesh>
-            </group>
-
-            {/* Right Arm (Shoulder Pivot) */}
-            <group ref={rightArmPivotRef} position={[0.42, 0.25, 0]}>
-              <mesh position={[0, -0.2, 0]} material={materials.shirt}>
-                <boxGeometry args={[0.18, 0.4, 0.18]} />
-              </mesh>
-              <mesh castShadow position={[0, -0.45, 0]} material={materials.skin}>
-                <boxGeometry args={[0.14, 0.3, 0.14]} />
+              {/* Hand */}
+              <mesh castShadow position={[0, -0.46, 0]} material={materials.skin}>
+                <sphereGeometry args={[0.08, 10, 10]} />
               </mesh>
             </group>
 
-            {/* Left Leg (Hip Pivot) */}
-            <group ref={leftLegPivotRef} position={[-0.16, -0.38, 0]}>
-              <mesh castShadow receiveShadow position={[0, -0.3, 0]} material={materials.pants}>
-                <boxGeometry args={[0.18, 0.55, 0.18]} />
+            {/* Right Arm & Shoulder Joint */}
+            <group ref={rightArmPivotRef} position={[0.27, 0.2, 0]}>
+              {/* Shoulder Ball Joint (Connects directly into Torso Seam) */}
+              <mesh material={materials.shirt}>
+                <sphereGeometry args={[0.11, 10, 10]} />
               </mesh>
-              {/* Boot */}
-              <mesh castShadow position={[0, -0.62, 0.03]} material={materials.shoes}>
-                <boxGeometry args={[0.2, 0.12, 0.26]} />
+              {/* Upper Arm Sleeve */}
+              <mesh castShadow position={[0, -0.22, 0]} material={materials.shirt}>
+                <capsuleGeometry args={[0.09, 0.36, 8, 12]} />
+              </mesh>
+              {/* Hand */}
+              <mesh castShadow position={[0, -0.46, 0]} material={materials.skin}>
+                <sphereGeometry args={[0.08, 10, 10]} />
               </mesh>
             </group>
 
-            {/* Right Leg (Hip Pivot) */}
-            <group ref={rightLegPivotRef} position={[0.16, -0.38, 0]}>
-              <mesh castShadow receiveShadow position={[0, -0.3, 0]} material={materials.pants}>
-                <boxGeometry args={[0.18, 0.55, 0.18]} />
+            {/* Left Leg & Hip Joint */}
+            <group ref={leftLegPivotRef} position={[-0.13, -0.32, 0]}>
+              {/* Hip Ball Joint */}
+              <mesh material={materials.pants}>
+                <sphereGeometry args={[0.105, 10, 10]} />
               </mesh>
-              {/* Boot */}
-              <mesh castShadow position={[0, -0.62, 0.03]} material={materials.shoes}>
-                <boxGeometry args={[0.2, 0.12, 0.26]} />
+              {/* Thigh & Calves Pants */}
+              <mesh castShadow position={[0, -0.24, 0]} material={materials.pants}>
+                <capsuleGeometry args={[0.1, 0.42, 8, 12]} />
               </mesh>
+              {/* Leather Boot & Sole */}
+              <group position={[0, -0.5, 0.04]}>
+                <mesh castShadow material={materials.shoes}>
+                  <boxGeometry args={[0.17, 0.14, 0.26]} />
+                </mesh>
+                <mesh position={[0, -0.07, 0]} material={materials.sole}>
+                  <boxGeometry args={[0.18, 0.04, 0.28]} />
+                </mesh>
+              </group>
             </group>
+
+            {/* Right Leg & Hip Joint */}
+            <group ref={rightLegPivotRef} position={[0.13, -0.32, 0]}>
+              {/* Hip Ball Joint */}
+              <mesh material={materials.pants}>
+                <sphereGeometry args={[0.105, 10, 10]} />
+              </mesh>
+              {/* Thigh & Calves Pants */}
+              <mesh castShadow position={[0, -0.24, 0]} material={materials.pants}>
+                <capsuleGeometry args={[0.1, 0.42, 8, 12]} />
+              </mesh>
+              {/* Leather Boot & Sole */}
+              <group position={[0, -0.5, 0.04]}>
+                <mesh castShadow material={materials.shoes}>
+                  <boxGeometry args={[0.17, 0.14, 0.26]} />
+                </mesh>
+                <mesh position={[0, -0.07, 0]} material={materials.sole}>
+                  <boxGeometry args={[0.18, 0.04, 0.28]} />
+                </mesh>
+              </group>
             </group>
           </group>
         </group>
+      </group>
 
       {/* Physics Capsule Collider */}
       <CapsuleCollider args={[0.65, 0.35]} position={[0, 0.85, 0]} />

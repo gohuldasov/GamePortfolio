@@ -5,51 +5,52 @@ import * as THREE from 'three';
 interface CameraControllerProps {
   gameState: 'loading' | 'title' | 'dialogue' | 'explore';
   playerRef: React.RefObject<THREE.Group | null>;
+  isArcheryMode?: boolean;
 }
 
+// Building centers for camera collision avoidance
 const collisionBuildings = [
-  { x: 0.0, z: 20, r: 3.5 },
-  { x: 12.5, z: 10, r: 3.5 },
-  { x: 10.8, z: 0, r: 3.5 },
-  { x: -3.2, z: -10, r: 3.5 },
-  { x: -9.2, z: -20, r: 3.5 },
-  { x: -3.8, z: -30, r: 3.5 },
-  { x: -9.8, z: -40, r: 3.5 },
-  { x: 0.9, z: -52, r: 4.5 },
+  { x: -22.0, z: -22.0, r: 3.5 }, // House 1
+  { x: 2.0, z: -18.0, r: 3.5 },   // House 2
+  { x: 24.0, z: -5.0, r: 3.5 },   // House 3
+  { x: -22.0, z: -5.0, r: 3.5 },  // House 4
+  { x: -22.0, z: 15.0, r: 3.5 },  // House 5
+  { x: 20.0, z: 10.0, r: 4.2 },   // Church
+  { x: 24.0, z: -32.0, r: 4.8 },  // Barn & Silo
+  { x: -24.0, z: -36.0, r: 3.8 }, // Windmill
 ];
 
-export default function CameraController({ gameState, playerRef }: CameraControllerProps) {
+export default function CameraController({ gameState, playerRef, isArcheryMode }: CameraControllerProps) {
   const { camera, gl } = useThree();
   
   // Camera angles (yaw = theta, pitch = phi)
-  const anglesRef = useRef({ theta: Math.PI, phi: 0.15 }); // Start behind player (Math.PI looking North)
+  const anglesRef = useRef({ theta: Math.PI, phi: 0.22 }); // Start behind player looking North
   const isDraggingRef = useRef(false);
   const previousMousePositionRef = useRef({ x: 0, y: 0 });
 
   // Camera settings
-  const targetDistanceRef = useRef(5.5);
-  const currentDistanceRef = useRef(5.5);
-  const currentLookAtRef = useRef(new THREE.Vector3());
+  const targetDistanceRef = useRef(6.0);
+  const currentDistanceRef = useRef(6.0);
+  const currentLookAtRef = useRef(new THREE.Vector3(0, 1.25, 25));
 
   useEffect(() => {
     const handleMouseDown = (e: MouseEvent) => {
-      // Rotate camera by dragging
       isDraggingRef.current = true;
       previousMousePositionRef.current = { x: e.clientX, y: e.clientY };
     };
 
     const handleMouseMove = (e: MouseEvent) => {
-      if (!isDraggingRef.current || gameState !== 'explore') return;
+      if (!isDraggingRef.current || gameState !== 'explore' || isArcheryMode) return;
 
       const deltaX = e.clientX - previousMousePositionRef.current.x;
       const deltaY = e.clientY - previousMousePositionRef.current.y;
 
-      const sensitivity = 0.003;
+      const sensitivity = 0.0035;
       anglesRef.current.theta -= deltaX * sensitivity;
       anglesRef.current.phi += deltaY * sensitivity;
 
       // Clamp pitch to avoid ground clipping or going overhead
-      anglesRef.current.phi = Math.max(0.05, Math.min(Math.PI / 2.8, anglesRef.current.phi));
+      anglesRef.current.phi = Math.max(0.05, Math.min(Math.PI / 2.6, anglesRef.current.phi));
 
       previousMousePositionRef.current = { x: e.clientX, y: e.clientY };
     };
@@ -72,11 +73,11 @@ export default function CameraController({ gameState, playerRef }: CameraControl
       const deltaX = e.touches[0].clientX - previousMousePositionRef.current.x;
       const deltaY = e.touches[0].clientY - previousMousePositionRef.current.y;
 
-      const sensitivity = 0.005;
+      const sensitivity = 0.0055;
       anglesRef.current.theta -= deltaX * sensitivity;
       anglesRef.current.phi += deltaY * sensitivity;
 
-      anglesRef.current.phi = Math.max(0.05, Math.min(Math.PI / 2.8, anglesRef.current.phi));
+      anglesRef.current.phi = Math.max(0.05, Math.min(Math.PI / 2.6, anglesRef.current.phi));
 
       previousMousePositionRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     };
@@ -107,19 +108,23 @@ export default function CameraController({ gameState, playerRef }: CameraControl
     const playerPos = new THREE.Vector3();
     playerRef.current.getWorldPosition(playerPos);
 
-    // Height offset representing the player's chest/look target
+    // Look target centered on player height
     const targetLookAt = playerPos.clone().add(new THREE.Vector3(0, 1.25, 0));
-    currentLookAtRef.current.lerp(targetLookAt, delta * 8);
+    currentLookAtRef.current.lerp(targetLookAt, delta * 12);
 
-    if (gameState !== 'explore') {
-      // Dialogue/Start cinematic camera: fixed position facing the player character
-      // Character is looking south (towards screen), so camera is positioned south looking north
-      const introCamPos = playerPos.clone().add(new THREE.Vector3(0, 1.35, 3.2));
-      camera.position.lerp(introCamPos, delta * 3);
+    if (isArcheryMode) {
+      // First-person over-the-shoulder Archery Firing Line camera
+      const archeryCamPos = new THREE.Vector3(18.0, 3.2, -35.2);
+      const archeryLookTarget = new THREE.Vector3(18.0, 2.8, -58.0);
+      camera.position.lerp(archeryCamPos, delta * 10);
+      camera.lookAt(archeryLookTarget);
+    } else if (gameState !== 'explore') {
+      // Cinematic camera framing player character & village path clearly from front
+      const introCamPos = playerPos.clone().add(new THREE.Vector3(0, 1.5, 5.0));
+      camera.position.lerp(introCamPos, delta * 8);
       camera.lookAt(currentLookAtRef.current);
     } else {
-      // Exploration camera following behind player
-      // Fetch user inputs/velocity to adjust target distance (zoom out slightly when moving)
+      // Exploration camera following smooth behind player
       const rigidBody = playerRef.current.parent;
       let speed = 0;
       if (rigidBody && (rigidBody as any).linvel) {
@@ -127,18 +132,18 @@ export default function CameraController({ gameState, playerRef }: CameraControl
         speed = Math.sqrt(vel.x * vel.x + vel.z * vel.z);
       }
       
-      // Dynamic camera distance zoom
-      const baseDistance = 5.2;
-      const zoomFactor = Math.min(1.2, speed * 0.12);
+      // Dynamic camera distance zoom when sprinting
+      const baseDistance = 5.8;
+      const zoomFactor = Math.min(1.4, speed * 0.15);
       targetDistanceRef.current = baseDistance + zoomFactor;
       
       currentDistanceRef.current = THREE.MathUtils.lerp(
         currentDistanceRef.current,
         targetDistanceRef.current,
-        delta * 4
+        delta * 5
       );
 
-      // Calculate desired camera position using spherical coordinates centered on currentLookAtRef
+      // Spherical coordinate offsets around player position
       const theta = anglesRef.current.theta;
       const phi = anglesRef.current.phi;
       const radius = currentDistanceRef.current;
@@ -151,14 +156,13 @@ export default function CameraController({ gameState, playerRef }: CameraControl
 
       let desiredCamPos = currentLookAtRef.current.clone().add(offset);
 
-      // Simple, performant collision checks with terrain and buildings
-      // 1. Minimum height clamp to prevent looking below ground
+      // Clamp height to prevent looking through floor plane
       const minCamHeight = playerPos.y + 0.65;
       if (desiredCamPos.y < minCamHeight) {
         desiredCamPos.y = minCamHeight;
       }
 
-      // 2. Collision with Buildings
+      // Soft collision push with building walls
       collisionBuildings.forEach(b => {
         const dx = desiredCamPos.x - b.x;
         const dz = desiredCamPos.z - b.z;
@@ -169,11 +173,12 @@ export default function CameraController({ gameState, playerRef }: CameraControl
         }
       });
 
-      // Lerp camera to target position smoothly
-      camera.position.lerp(desiredCamPos, delta * 12);
+      // Lerp camera position smoothly to follow player motion
+      camera.position.lerp(desiredCamPos, delta * 14);
       camera.lookAt(currentLookAtRef.current);
     }
   });
 
   return null;
 }
+
