@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import GameCanvas from './components/GameCanvas';
 import { portfolioData, Project } from './data/portfolioData';
@@ -22,7 +22,7 @@ export default function App() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [isNight, setIsNight] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [activeQuest, setActiveQuest] = useState('Explore the village! Walk along the path or use the top menu.');
+  const [activeQuest, setActiveQuest] = useState('Explore the village! Walk along the path to discover buildings.');
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [contactMessage, setContactMessage] = useState('');
@@ -134,7 +134,7 @@ export default function App() {
     setActiveQuest('Explore the village! Walk along the path or use the top menu.');
   };
 
-  const handleScorePoints = (points: number, hitType: string) => {
+  const handleScorePoints = useCallback((points: number, hitType: string) => {
     setArcheryScore(prev => {
       const nextScore = prev + points;
       setArcheryHighScore(hs => Math.max(hs, nextScore));
@@ -142,15 +142,15 @@ export default function App() {
     });
     setArcheryHitText(hitType);
     setTimeout(() => setArcheryHitText(null), 2500);
-  };
+  }, []);
 
-  const handlePowerChange = (power: number) => {
+  const handlePowerChange = useCallback((power: number) => {
     setArcheryPower(power);
-  };
+  }, []);
 
-  const handleShootArrow = () => {
+  const handleShootArrow = useCallback(() => {
     setArcheryShots(prev => prev + 1);
-  };
+  }, []);
 
   const handleCloseModal = () => {
     setCurrentModal(null);
@@ -262,54 +262,6 @@ export default function App() {
               ✨ Current Quest
             </div>
             <div style={{ fontWeight: 600, fontSize: '0.92rem', color: '#1b3a17' }}>{activeQuest}</div>
-          </div>
-
-          {/* Top Center: Minimalist Portfolio Navigation Bar */}
-          <div style={{
-            position: 'absolute', top: 20, left: '50%', transform: 'translateX(-50%)',
-            display: 'flex', gap: '6px', background: 'rgba(255,255,255,0.96)',
-            border: '3px solid #1b3a17', borderRadius: '20px', padding: '6px 12px',
-            boxShadow: '4px 4px 0 #1b3a17', pointerEvents: 'auto', zIndex: 30,
-            overflowX: 'auto', maxWidth: 'calc(100vw - 340px)'
-          }}>
-            {[
-              { name: 'About Me', label: '🏠 About Me', modal: 'home' as const },
-              { name: 'Education', label: '🎓 Education', modal: 'school' as const },
-              { name: 'Skills', label: '⚡ Skills', modal: 'tech' as const },
-              { name: 'Projects', label: '🚀 Projects', modal: 'projects' as const },
-              { name: 'Experience', label: '💼 Experience', modal: 'experience' as const },
-              { name: 'Developer Workshop', label: '🛠️ Workshop', modal: 'workshop' as const },
-              { name: 'Contact', label: '📬 Contact', modal: 'contact' as const },
-            ].map((nav, idx) => (
-              <button
-                key={idx}
-                onClick={() => {
-                  if (currentModal === nav.modal) {
-                    setCurrentModal(null);
-                    setActiveQuest('Explore the village! Walk along the path or use the menu above.');
-                  } else {
-                    setCurrentModal(nav.modal);
-                    setActiveQuest(`Viewing: ${nav.name}`);
-                  }
-                }}
-                style={{
-                  fontFamily: 'var(--font-title)',
-                  fontSize: '0.84rem',
-                  fontWeight: 600,
-                  padding: '6px 14px',
-                  borderRadius: '12px',
-                  border: currentModal === nav.modal ? '2px solid #1b3a17' : '1px solid #cbd5e1',
-                  background: currentModal === nav.modal ? '#ff7096' : '#ffffff',
-                  color: currentModal === nav.modal ? '#ffffff' : '#1b3a17',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  boxShadow: currentModal === nav.modal ? '2px 2px 0 #1b3a17' : 'none',
-                  transition: 'all 0.15s ease'
-                }}
-              >
-                {nav.label}
-              </button>
-            ))}
           </div>
 
           {/* Top Right: Lighting Toggle & Controls */}

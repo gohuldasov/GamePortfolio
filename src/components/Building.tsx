@@ -842,77 +842,77 @@ interface BuildingListProps {
 export default function BuildingList({ currentModal, isNight }: BuildingListProps) {
   return (
     <group>
-      {/* ── WINDMILL (TOP LEFT) ── */}
-      <Windmill position={[-48, getTerrainHeight(-48, -62), -62]} rotation={[0, Math.PI / 4, 0]} />
+      {/* ── WINDMILL (FAR NORTH WEST HILLTOP - Facing driveway coming from [-65, -55]) ── */}
+      <Windmill position={[-85, getTerrainHeight(-85, -78), -78]} rotation={[0, Math.atan2(20, 23), 0]} />
 
-      {/* ── BARN & SILO (TOP RIGHT - CONTACT AREA) ── */}
+      {/* ── BARN & SILO (FAR NORTH EAST - CONTACT AREA - Facing driveway coming from [65, -45]) ── */}
       <BarnAndSilo
-        position={[44, getTerrainHeight(44, -56), -56]}
-        rotation={[0, -Math.PI / 2, 0]}
+        position={[75, getTerrainHeight(75, -70), -70]}
+        rotation={[0, Math.atan2(-10, 25), 0]}
         isOpen={currentModal === 'contact'}
         name="Contact Area"
         icon="📬"
       />
 
-      {/* ── CHURCH (MIDDLE EAST - DEVELOPER WORKSHOP) ── */}
+      {/* ── CHURCH (SOUTH EAST - DEVELOPER WORKSHOP - Facing path coming from [50, 25]) ── */}
       <Church
-        position={[38, getTerrainHeight(38, 18), 18]}
-        rotation={[0, -Math.PI / 2, 0]}
+        position={[75, getTerrainHeight(75, 30), 30]}
+        rotation={[0, Math.atan2(-25, -5), 0]}
         isOpen={currentModal === 'workshop'}
         name="Developer Workshop"
         icon="🛠️"
       />
 
-      {/* ── HOUSE 1: ABOUT ME (NORTH WEST) ── */}
+      {/* ── HOUSE 1: ABOUT ME (NORTH WEST - Facing path coming from [-45, -25]) ── */}
       <HandcraftedCottage
         name="About Me"
         icon="🏠"
-        position={[-42, getTerrainHeight(-42, -42), -42]}
-        rotation={[0, Math.PI / 2, 0]}
+        position={[-72, getTerrainHeight(-72, -45), -45]}
+        rotation={[0, Math.atan2(27, 20), 0]}
         isOpen={currentModal === 'home'}
         isNight={isNight}
         type="cottage"
       />
 
-      {/* ── HOUSE 2: EDUCATION (NORTH CENTER) ── */}
+      {/* ── HOUSE 2: EDUCATION (NORTH ACADEMY CAMPUS - Facing path coming from [-15, -40]) ── */}
       <HandcraftedCottage
         name="Education"
         icon="🎓"
-        position={[8, getTerrainHeight(8, -36), -36]}
-        rotation={[0, 0, 0]}
+        position={[-20, getTerrainHeight(-20, -68), -68]}
+        rotation={[0, Math.atan2(5, 28), 0]}
         isOpen={currentModal === 'school'}
         isNight={isNight}
         type="school"
       />
 
-      {/* ── HOUSE 3: SKILLS (EAST) ── */}
+      {/* ── HOUSE 3: SKILLS (FAR EAST TECH DOME - Facing path coming from [50, -15]) ── */}
       <HandcraftedCottage
         name="Skills"
         icon="⚡"
-        position={[44, getTerrainHeight(44, -8), -8]}
-        rotation={[0, -Math.PI / 2, 0]}
+        position={[75, getTerrainHeight(75, -20), -20]}
+        rotation={[0, Math.atan2(-25, 5), 0]}
         isOpen={currentModal === 'tech'}
         isNight={isNight}
         type="dome"
       />
 
-      {/* ── HOUSE 4: PROJECTS (WEST) ── */}
+      {/* ── HOUSE 4: PROJECTS (FAR WEST ENGINEERING GEARHOUSE - Facing path coming from [-50, -10]) ── */}
       <HandcraftedCottage
         name="Projects"
         icon="🚀"
-        position={[-42, getTerrainHeight(-42, -10), -10]}
+        position={[-75, getTerrainHeight(-75, -10), -10]}
         rotation={[0, Math.PI / 2, 0]}
         isOpen={currentModal === 'projects'}
         isNight={isNight}
         type="gearhouse"
       />
 
-      {/* ── HOUSE 5: EXPERIENCE (SOUTH WEST NEAR RIVER) ── */}
+      {/* ── HOUSE 5: EXPERIENCE (SOUTH WEST CASTLE CITADEL - Facing path coming from [-45, 25]) ── */}
       <HandcraftedCottage
         name="Experience"
         icon="💼"
-        position={[-42, getTerrainHeight(-42, 25), 25]}
-        rotation={[0, Math.PI / 2, 0]}
+        position={[-75, getTerrainHeight(-75, 35), 35]}
+        rotation={[0, Math.atan2(30, -10), 0]}
         isOpen={currentModal === 'experience'}
         isNight={isNight}
         type="castle"

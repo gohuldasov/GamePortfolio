@@ -95,27 +95,20 @@ function GrassMeadow() {
   // Dense step (0.55) across floor mat for grass carpet - height aligned to terrain elevation
   const { count, transforms, colors } = useMemo(() => {
     const pathConnections: [number, number][][] = [
-      // Main Arterials
-      [[-18, 54], [-20, 42], [-20, 32], [-18, 20], [-10, 10], [0, 0]],
-      [[0, 0], [-14, -3], [-26, -8], [-36, -20], [-36, -34], [-38, -48], [-42, -58]],
-      [[0, 0], [0, -14], [-2, -26], [-6, -45], [-8, -55], [6, -55], [20, -52]],
-      [[0, 0], [14, -3], [28, -8], [36, -20], [36, -42], [38, -52]],
-      [[0, 0], [14, 6], [24, 14], [28, 28], [28, 42], [22, 50]],
+      // Main Starting Highway & Arterials
+      [[0, 58], [0, 44], [0, 30], [0, 15], [0, 0]],
+      [[0, 0], [-20, -12], [-45, -25], [-72, -45]],
+      [[0, 0], [-25, -10], [-50, -10], [-75, -10]],
+      [[0, 0], [-20, 15], [-45, 25], [-75, 35]],
+      [[0, 0], [0, -20], [-15, -40], [-20, -68]],
+      [[0, 0], [25, -8], [50, -15], [75, -20]],
+      [[0, 0], [25, 12], [50, 25], [75, 30]],
 
-      // ── SUB-ROADS / DRIVEWAYS ──
-      [[-36, -34], [-38.2, -42]],
-      [[-26, -8], [-38.2, -10]],
-      [[-20, 20], [-32, 22], [-38.2, 25]],
-      [[-38, -48], [-48, -58.8]],
-      [[-6, -55], [-12, -53.5]],
-      [[-2, -26], [8, -32.8]],
-      [[20, -52], [20, -55.0]],
-      [[38, -52], [40.2, -56]],
-      [[36, -42], [40.2, -32]],
-      [[36, -20], [40.2, -8]],
-      [[24, 14], [33.8, 18]],
-      [[22, 50], [22, 49.2]],
-      [[-18, 20], [-8, 20.2]],
+      [[-45, -25], [-65, -55], [-85, -78]],           // Windmill driveway
+      [[50, -15], [50, -35]],             // Dedicated Archery Range Arena driveway
+      [[50, -15], [65, -45], [75, -70]],   // Contact Barn & Silo driveway
+      [[50, 25], [48, 45]],               // Bakery & Tavern driveway
+      [[-20, 15], [-8, 20]],              // Recreation Deck driveway
     ];
 
     const listTransforms: THREE.Matrix4[] = [];
@@ -135,11 +128,11 @@ function GrassMeadow() {
     for (let gx = -104; gx <= 104; gx += 0.65) {
       for (let gz = -96; gz <= 84; gz += 0.65) {
         // Skip Recreation Pond
-        const dRecPond = Math.hypot(gx - (-8), gz - 32);
+        const dRecPond = Math.hypot(gx - (-28), gz - 32);
         if (dRecPond < 11.5) continue;
 
         // Skip North Pond
-        const dNorthPond = Math.hypot(gx - 20, gz - (-62));
+        const dNorthPond = Math.hypot(gx - 28, gz - (-62));
         if (dNorthPond < 8.0) continue;
 
         // Skip South River
@@ -351,27 +344,22 @@ export default function World() {
   // Generate continuous natural sandy dirt road mesh network aligned smoothly to terrain elevation
   const { roadGeometry, plazaGeometry } = useMemo(() => {
     const pathConnections: [number, number][][] = [
-      // Main Arterials
-      [[-18, 54], [-20, 42], [-20, 32], [-18, 20], [-10, 10], [0, 0]],
-      [[0, 0], [-14, -3], [-26, -8], [-36, -20], [-36, -34], [-38, -48], [-42, -58]],
-      [[0, 0], [0, -14], [-2, -26], [-6, -45], [-8, -55], [6, -55], [20, -52]],
-      [[0, 0], [14, -3], [28, -8], [36, -20], [36, -42], [38, -52]],
-      [[0, 0], [14, 6], [24, 14], [28, 28], [28, 42], [22, 50]],
+      // Main Starting Highway & Arterials
+      [[0, 58], [0, 44], [0, 30], [0, 15], [0, 0]],
+      [[0, 0], [-20, -12], [-45, -25], [-72, -45]],
+      [[0, 0], [-25, -10], [-50, -10], [-75, -10]],
+      [[0, 0], [-20, 15], [-45, 25], [-75, 35]],
+      [[0, 0], [0, -20], [-15, -40], [-20, -68]],
+      [[0, 0], [25, -8], [50, -15], [75, -20]],
+      [[0, 0], [25, 12], [50, 25], [75, 30]],
 
-      // ── SUB-ROADS / DRIVEWAYS ──
-      [[-36, -34], [-38.2, -42]],
-      [[-26, -8], [-38.2, -10]],
-      [[-20, 20], [-32, 22], [-38.2, 25]],
-      [[-38, -48], [-48, -58.8]],
-      [[-6, -55], [-12, -53.5]],
-      [[-2, -26], [8, -32.8]],
-      [[20, -52], [20, -55.0]],
-      [[38, -52], [40.2, -56]],
-      [[36, -42], [40.2, -32]],
-      [[36, -20], [40.2, -8]],
-      [[24, 14], [33.8, 18]],
-      [[22, 50], [22, 49.2]],
-      [[-18, 20], [-8, 20.2]],
+      // Sub-Roads & Driveways
+      [[-45, -25], [-65, -55], [-85, -78]],           // Windmill driveway
+      [[-15, -40], [-25, -35]],           // Town Hall driveway
+      [[50, -15], [50, -35]],             // Dedicated Archery Range Arena driveway
+      [[50, -15], [65, -45], [75, -70]],   // Contact Barn & Silo driveway
+      [[50, 25], [48, 45]],               // Bakery & Tavern driveway
+      [[-20, 15], [-8, 20]],              // Recreation Deck driveway
     ];
 
     const roadPositions: number[] = [];
@@ -586,8 +574,8 @@ export default function World() {
       {/* Deformed Natural Terrain Ground Layer */}
       <RigidBody type="fixed" colliders="trimesh">
         <mesh geometry={groundGeometry} receiveShadow material={materials.grassTop} />
-        <mesh geometry={dirtGeometry} position={[0, -0.6, 0]} material={materials.dirt} />
       </RigidBody>
+      <mesh geometry={dirtGeometry} position={[0, -0.6, 0]} material={materials.dirt} />
 
       {/* Stepped Mountain Ridges in Background */}
       {mountains.map((m, idx) => {
@@ -618,7 +606,7 @@ export default function World() {
       <GrassMeadow />
 
       {/* ── RECREATION POND (SOUTH WEST CENTER - Carved Basin + Shoreline Pebbles) ── */}
-      <group position={[-8, 0, 32]}>
+      <group position={[-28, 0, 32]}>
         {/* Underwater Sand Basin Bed */}
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, 0]} receiveShadow material={materials.sand}>
           <circleGeometry args={[11.2, 32]} />
@@ -632,7 +620,7 @@ export default function World() {
           const angle = (i / 24) * Math.PI * 2;
           const rx = Math.cos(angle) * 11.5;
           const rz = Math.sin(angle) * 11.5;
-          const ry = getTerrainHeight(-8 + rx, 32 + rz);
+          const ry = getTerrainHeight(-28 + rx, 32 + rz);
           return (
             <mesh key={`rec-stone-${i}`} position={[rx, ry - 0.02, rz]} material={materials.pebble} castShadow>
               <dodecahedronGeometry args={[0.3 + (i % 3) * 0.1, 0]} />
@@ -642,7 +630,7 @@ export default function World() {
       </group>
 
       {/* ── NORTH POND (TOP RIGHT CENTER - Carved Basin + Shoreline Pebbles) ── */}
-      <group position={[20, 0, -62]}>
+      <group position={[28, 0, -62]}>
         {/* Underwater Sand Basin Bed */}
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, 0]} receiveShadow material={materials.sand}>
           <circleGeometry args={[7.8, 32]} />
@@ -656,7 +644,7 @@ export default function World() {
           const angle = (i / 18) * Math.PI * 2;
           const rx = Math.cos(angle) * 8.0;
           const rz = Math.sin(angle) * 8.0;
-          const ry = getTerrainHeight(20 + rx, -62 + rz);
+          const ry = getTerrainHeight(28 + rx, -62 + rz);
           return (
             <mesh key={`north-stone-${i}`} position={[rx, ry - 0.02, rz]} material={materials.pebble} castShadow>
               <dodecahedronGeometry args={[0.28 + (i % 3) * 0.1, 0]} />

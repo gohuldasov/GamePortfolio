@@ -31,14 +31,16 @@ const humps = [
 
 // Building Foundation Pads for Level Ground under Structures
 const BUILDING_PADS = [
-  { cx: -48, cz: -62, radius: 5.5 }, // Windmill
-  { cx: 44, cz: -56, radius: 8.0 },  // Barn & Silo
-  { cx: 38, cz: 18, radius: 6.5 },   // Church / Workshop
-  { cx: -42, cz: -42, radius: 6.0 }, // About Me
-  { cx: 8, cz: -36, radius: 6.0 },   // Education
-  { cx: 44, cz: -8, radius: 6.0 },   // Skills
-  { cx: -42, cz: -10, radius: 6.0 }, // Projects
-  { cx: -42, cz: 25, radius: 6.0 },  // Experience
+  { cx: -85, cz: -78, radius: 6.5 }, // Windmill
+  { cx: 75, cz: -70, radius: 8.5 },  // Barn & Silo (Contact Area)
+  { cx: 75, cz: 30, radius: 7.5 },   // Church / Workshop
+  { cx: -72, cz: -45, radius: 6.5 }, // About Me
+  { cx: -20, cz: -68, radius: 6.5 }, // Education
+  { cx: 75, cz: -20, radius: 6.5 },  // Skills
+  { cx: -75, cz: -10, radius: 6.5 }, // Projects
+  { cx: -75, cz: 35, radius: 6.5 },  // Experience
+  { cx: 50, cz: -45, radius: 8.5 },  // Dedicated Archery Range Arena & Field
+  { cx: 48, cz: 45, radius: 6.5 },   // Bakery & Tavern
   { cx: 0, cz: 0, radius: 3.5 },     // Center Well Plaza
 ];
 
@@ -78,8 +80,8 @@ export function getTerrainHeight(x: number, z: number): number {
     }
   }
 
-  // 2. Carve Recreation Pond Basin (Center: x=-8, z=32, Radius: 11.5)
-  const dRec = Math.hypot(x - (-8), z - 32);
+  // 2. Carve Recreation Pond Basin (Center: x=-28, z=32, Radius: 11.5)
+  const dRec = Math.hypot(x - (-28), z - 32);
   const recRadius = 11.5;
   const recBank = 3.5; // Shore transition width
   if (dRec < recRadius + recBank) {
@@ -93,8 +95,8 @@ export function getTerrainHeight(x: number, z: number): number {
     }
   }
 
-  // 3. Carve North Pond Basin (Center: x=20, z=-62, Radius: 8.0)
-  const dNorth = Math.hypot(x - 20, z - (-62));
+  // 3. Carve North Pond Basin (Center: x=28, z=-62, Radius: 8.0)
+  const dNorth = Math.hypot(x - 28, z - (-62));
   const northRadius = 8.0;
   const northBank = 3.0;
   if (dNorth < northRadius + northBank) {
@@ -108,14 +110,56 @@ export function getTerrainHeight(x: number, z: number): number {
     }
   }
 
-  // 4. Carve South River Trench (z > 52.5, x between -115 and 115)
-  if (z > 52.0 && x > -115 && x < 115) {
+  // 4. South Road Embankment & River Trench (x near 0, z between 35 and 75)
+  const dRoadX = Math.abs(x);
+  if (dRoadX < 8.0 && z > 35.0 && z < 75.0) {
+    // Carve South Riverbed under river (z between 52.5 and 63.5)
+    if (z >= 52.5 && z <= 63.5) {
+      return 0.05; // Underwater riverbed height (water surface is at 0.35)
+    }
+
+    // Riverbank landing elevation at bridge ends (z=50 and z=66)
+    const landingH = 0.48;
+
+    // Smooth slope into river trench at bank edges
+    if (z > 50.0 && z < 52.5) {
+      const t = (z - 50.0) / 2.5;
+      const smoothT = t * t * (3 - 2 * t);
+      return landingH + (0.05 - landingH) * smoothT;
+    }
+    if (z > 63.5 && z < 66.0) {
+      const t = (66.0 - z) / 2.5;
+      const smoothT = t * t * (3 - 2 * t);
+      return landingH + (0.05 - landingH) * smoothT;
+    }
+
+    // Road approach embankment rising smoothly from z=35 to z=50 (and z=75 to z=66)
+    let approachT = 1.0;
+    if (z <= 50.0) {
+      approachT = Math.max(0, Math.min(1, (z - 35.0) / 15.0));
+    } else if (z >= 66.0) {
+      approachT = Math.max(0, Math.min(1, (75.0 - z) / 9.0));
+    }
+    const smoothApproach = approachT * approachT * (3 - 2 * approachT);
+    const targetH = rawH + (landingH - rawH) * smoothApproach;
+
+    if (dRoadX <= 4.0) {
+      return targetH;
+    } else {
+      const t = (dRoadX - 4.0) / 4.0;
+      const smoothT = t * t * (3 - 2 * t);
+      return targetH + (rawH - targetH) * smoothT;
+    }
+  }
+
+  // 5. Carve South River Trench outer wings (x outside road corridor)
+  if (z > 52.0 && z < 64.0 && (x <= -8.0 || x >= 8.0) && x > -115 && x < 115) {
     const targetY = 0.05;
-    const edgeDist = Math.min(x - (-115), 115 - x, z - 52.0);
-    if (edgeDist > 3.0) {
+    const edgeDist = Math.min(Math.abs(x) - 8.0, 115 - Math.abs(x), z - 52.0, 64.0 - z);
+    if (edgeDist > 2.5) {
       return targetY;
     } else {
-      const t = Math.max(0, edgeDist) / 3.0;
+      const t = Math.max(0, edgeDist) / 2.5;
       const smoothT = t * t * (3 - 2 * t);
       return rawH + (targetY - rawH) * smoothT;
     }

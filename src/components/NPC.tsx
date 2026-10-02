@@ -708,8 +708,8 @@ const BUILDING_OBSTACLES = [
   { cx: -42, cz: -10, radius: 6.0 }, // Projects
   { cx: -42, cz: 25, radius: 6.0 },  // Experience
   { cx: 0, cz: 0, radius: 2.8 },     // Center Well
-  { cx: -8, cz: 32, radius: 12.2 },  // Recreation Pond
-  { cx: 20, cz: -62, radius: 8.8 },  // North Pond
+  { cx: -28, cz: 32, radius: 11.5 }, // Recreation Pond
+  { cx: 28, cz: -62, radius: 8.0 },  // North Pond
 ];
 
 // 🚶 VILLAGER CITIZEN COMPONENT
@@ -823,7 +823,7 @@ function Citizen({ position, pathPoints, speed = 1.0, color = 0xdd6b20 }: { posi
 
 export default function NPCList() {
   const mainRoadLoop: [number, number][] = [
-    [-18, 54], [-20, 32], [-10, 10], [0, 0], [14, 6], [24, 14], [28, 42], [22, 50], [28, 28], [14, 6], [0, 0], [-14, -3], [-26, -8], [-36, -20], [-36, -34], [-26, -8], [0, 0]
+    [-18, 48], [-20, 32], [-10, 10], [0, 0], [14, 6], [24, 14], [28, 42], [22, 50], [28, 28], [14, 6], [0, 0], [-14, -3], [-26, -8], [-36, -20], [-36, -34], [-26, -8], [0, 0]
   ];
 
   const northRoadLoop: [number, number][] = [
@@ -833,7 +833,7 @@ export default function NPCList() {
   return (
     <group>
       {/* 🚶 Wandering Villagers */}
-      <Citizen position={[-18, 0.1, 54]} pathPoints={mainRoadLoop} speed={1.2} color={0x06d6a0} />
+      <Citizen position={[-18, 0.1, 48]} pathPoints={mainRoadLoop} speed={1.2} color={0x06d6a0} />
       <Citizen position={[0, 0.1, 0]} pathPoints={northRoadLoop} speed={1.0} color={0xef476f} />
 
       {/* 🐔 Chickens Roaming inside Chicken Coop */}
@@ -849,15 +849,15 @@ export default function NPCList() {
       <Rabbit center={[32, 12]} seed={40} />
 
       {/* 🦆 Floating Ducks & Swans on Ponds */}
-      <Duck center={[-8, 32]} radius={3.2} seed={1} />
-      <Duck center={[-8, 32]} radius={4.8} seed={2.5} />
-      <Swan center={[20, -62]} radius={3.5} seed={3} />
-      <Duck center={[20, -62]} radius={4.2} seed={4.5} />
+      <Duck center={[-28, 32]} radius={3.5} seed={1} />
+      <Duck center={[-28, 32]} radius={5.2} seed={2.5} />
+      <Swan center={[28, -62]} radius={3.5} seed={3} />
+      <Duck center={[28, -62]} radius={4.2} seed={4.5} />
 
       {/* 🐟 Leaping Koi Fish in Water */}
-      <LeapingFish center={[-8, 32]} seed={1} />
-      <LeapingFish center={[-8, 30]} seed={2.8} />
-      <LeapingFish center={[20, -62]} seed={4} />
+      <LeapingFish center={[-28, 32]} seed={1} />
+      <LeapingFish center={[-28, 30]} seed={2.8} />
+      <LeapingFish center={[28, -62]} seed={4} />
 
       {/* 🐦 Tree Songbirds Perched in Canopies */}
       <Songbird position={[-14, getTerrainHeight(-14, -14) + 11.5, -14]} seed={1} />

@@ -5,6 +5,7 @@ import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { getRoadX, getRoadAngle, getRoadPerp } from '../utils/roadPath';
 import { getTerrainHeight } from '../utils/terrain';
+import { archeryAimRef } from './ArcheryGame';
 
 interface PlayerProps {
   gameState: 'loading' | 'title' | 'dialogue' | 'explore';
@@ -140,21 +141,21 @@ export default function Player({ gameState, playerRef, setProximityText, current
     // Reset position if fell off world or launched into sky by collision
     const groundY = getTerrainHeight(position.x, position.z);
     if (position.y < groundY - 5 || position.y > groundY + 30 || isNaN(position.y)) {
-      rbRef.current.setTranslation({ x: -18, y: getTerrainHeight(-18, 54) + 1.0, z: 54 }, true);
+      rbRef.current.setTranslation({ x: 0, y: getTerrainHeight(0, 45) + 1.2, z: 45 }, true);
       rbRef.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
       return;
     }
 
     // 2. Check Proximity to Portfolio Buildings & Mini-Games (Blueprint Positions)
     const buildingConfigs = [
-      { name: "About Me", bx: -42, bz: -42 },
-      { name: "Education", bx: 8, bz: -36 },
-      { name: "Skills", bx: 44, bz: -8 },
-      { name: "Projects", bx: -42, bz: -10 },
-      { name: "Experience", bx: -42, bz: 25 },
-      { name: "Developer Workshop", bx: 38, bz: 18 },
-      { name: "Contact", bx: 44, bz: -56 },
-      { name: "Archery Range", bx: 18, bz: -36 },
+      { name: "About Me", bx: -72, bz: -45 },
+      { name: "Education", bx: -20, bz: -68 },
+      { name: "Skills", bx: 75, bz: -20 },
+      { name: "Projects", bx: -75, bz: -10 },
+      { name: "Experience", bx: -75, bz: 35 },
+      { name: "Developer Workshop", bx: 75, bz: 30 },
+      { name: "Contact", bx: 75, bz: -70 },
+      { name: "Archery Range", bx: 50, bz: -35 },
     ];
 
     let nearestBuilding: string | null = null;
@@ -174,13 +175,26 @@ export default function Player({ gameState, playerRef, setProximityText, current
       setProximityText(nearestBuilding);
     }
 
-    // 3. Movement Logic (Camera Relative for Third Person Exploration)
+    // 3. Movement Logic & Archery Stance Positioning
     const keys = keysRef.current;
     const isWaving = gameState === 'loading' || gameState === 'title' || gameState === 'dialogue';
     
     maxSpeed.current = keys.shift ? 7.2 : 4.2;
 
-    if (gameState === 'explore' && !currentModal && !isArcheryMode && (keys.w || keys.s || keys.a || keys.d)) {
+    if (isArcheryMode) {
+      // Lock physics body to Archery Range firing line deck (X: 50.0, Z: -36.5)
+      const targetX = 50.0;
+      const targetZ = -36.5;
+      const targetY = getTerrainHeight(targetX, targetZ) + 1.2;
+
+      rbRef.current.setTranslation({ x: targetX, y: targetY, z: targetZ }, true);
+      rbRef.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
+
+      // Keep character body strictly facing downrange - zero body rotation when aiming!
+      if (playerRef.current) {
+        playerRef.current.rotation.y = Math.PI;
+      }
+    } else if (gameState === 'explore' && !currentModal && (keys.w || keys.s || keys.a || keys.d)) {
       // Calculate movement vector relative to camera rotation
       const camForward = new THREE.Vector3();
       state.camera.getWorldDirection(camForward);
@@ -233,10 +247,41 @@ export default function Player({ gameState, playerRef, setProximityText, current
       }
     }
 
-    // 4. Procedural Character Animation
+    // 4. Procedural Character Animation & Stances
     const isWalking = speed.current > 0.15;
     
-    if (isWaving) {
+    if (isArcheryMode) {
+      // 🎯 ARCHERY THIRD-PERSON STANCE
+      const pitch = archeryAimRef.pitch;
+      const power = archeryAimRef.power;
+      const yaw = archeryAimRef.yaw;
+
+      // Left arm extended holding bow forward, rotating with aim yaw
+      if (leftArmPivotRef.current) {
+        leftArmPivotRef.current.rotation.x = -Math.PI / 2.3 + pitch;
+        leftArmPivotRef.current.rotation.y = 0.25 + yaw * 0.4;
+        leftArmPivotRef.current.rotation.z = -0.1;
+      }
+
+      // Right arm holding arrow nock & string, pulling back with draw power and yaw aim
+      if (rightArmPivotRef.current) {
+        rightArmPivotRef.current.rotation.x = -Math.PI / 2.3 + pitch;
+        rightArmPivotRef.current.rotation.y = -0.35 - power * 0.45 + yaw * 0.4;
+        rightArmPivotRef.current.rotation.z = 0.15 + power * 0.2;
+      }
+
+      // Head & Torso aiming down target sightline
+      if (headGroupRef.current) {
+        headGroupRef.current.rotation.y = archeryAimRef.yaw * 0.4;
+        headGroupRef.current.rotation.x = pitch * 0.5;
+      }
+      if (torsoGroupRef.current) {
+        torsoGroupRef.current.position.y = 1.25;
+      }
+      if (leftLegPivotRef.current) leftLegPivotRef.current.rotation.x = 0;
+      if (rightLegPivotRef.current) rightLegPivotRef.current.rotation.x = 0;
+
+    } else if (isWaving) {
       // startup waving animation
       idleCycleRef.current += delta * 1.5;
       const breathe = Math.sin(idleCycleRef.current);
@@ -321,7 +366,7 @@ export default function Player({ gameState, playerRef, setProximityText, current
     <RigidBody
       ref={rbRef}
       type="dynamic"
-      position={[-18, getTerrainHeight(-18, 54) + 1.0, 54]} // Spawn at South Bridge entrance of enlarged village
+      position={[0, getTerrainHeight(0, 45) + 1.2, 45]} // Spawn at South Bridge entrance on main road
       enabledRotations={[false, false, false]} // Lock physical tumbling
       colliders={false}
     >
@@ -546,7 +591,7 @@ export default function Player({ gameState, playerRef, setProximityText, current
       </group>
 
       {/* Physics Capsule Collider */}
-      <CapsuleCollider args={[0.65, 0.35]} position={[0, 0.85, 0]} />
+      <CapsuleCollider args={[0.45, 0.3]} position={[0, 0.85, 0]} />
     </RigidBody>
   );
 }

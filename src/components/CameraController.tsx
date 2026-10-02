@@ -2,6 +2,9 @@ import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
+import { archeryAimRef } from './ArcheryGame';
+import { getTerrainHeight } from '../utils/terrain';
+
 interface CameraControllerProps {
   gameState: 'loading' | 'title' | 'dialogue' | 'explore';
   playerRef: React.RefObject<THREE.Group | null>;
@@ -10,14 +13,17 @@ interface CameraControllerProps {
 
 // Building centers for camera collision avoidance
 const collisionBuildings = [
-  { x: -22.0, z: -22.0, r: 3.5 }, // House 1
-  { x: 2.0, z: -18.0, r: 3.5 },   // House 2
-  { x: 24.0, z: -5.0, r: 3.5 },   // House 3
-  { x: -22.0, z: -5.0, r: 3.5 },  // House 4
-  { x: -22.0, z: 15.0, r: 3.5 },  // House 5
-  { x: 20.0, z: 10.0, r: 4.2 },   // Church
-  { x: 24.0, z: -32.0, r: 4.8 },  // Barn & Silo
-  { x: -24.0, z: -36.0, r: 3.8 }, // Windmill
+  { x: -72.0, z: -45.0, r: 4.5 }, // House 1 About Me
+  { x: -20.0, z: -68.0, r: 4.5 }, // House 2 Education
+  { x: 75.0,  z: -20.0, r: 4.5 }, // House 3 Skills
+  { x: -75.0, z: -10.0, r: 4.5 }, // House 4 Projects
+  { x: -75.0, z: 35.0,  r: 4.5 }, // House 5 Experience
+  { x: 75.0,  z: 30.0,  r: 5.0 }, // Church Developer Workshop
+  { x: 75.0,  z: -70.0, r: 5.5 }, // Barn & Silo Contact Area
+  { x: -85.0, z: -78.0, r: 4.5 }, // Windmill
+  { x: 50.0,  z: -45.0, r: 6.0 }, // Dedicated Archery Range Arena
+  { x: -25.0, z: -35.0, r: 6.0 }, // Town Hall
+  { x: 48.0,  z: 45.0,  r: 4.5 }, // Bakery & Tavern
 ];
 
 export default function CameraController({ gameState, playerRef, isArcheryMode }: CameraControllerProps) {
@@ -35,6 +41,7 @@ export default function CameraController({ gameState, playerRef, isArcheryMode }
 
   useEffect(() => {
     const handleMouseDown = (e: MouseEvent) => {
+      if (isArcheryMode) return;
       isDraggingRef.current = true;
       previousMousePositionRef.current = { x: e.clientX, y: e.clientY };
     };
@@ -61,6 +68,7 @@ export default function CameraController({ gameState, playerRef, isArcheryMode }
 
     // Touch support for mobile devices
     const handleTouchStart = (e: TouchEvent) => {
+      if (isArcheryMode) return;
       if (e.touches.length === 1) {
         isDraggingRef.current = true;
         previousMousePositionRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -68,7 +76,7 @@ export default function CameraController({ gameState, playerRef, isArcheryMode }
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      if (!isDraggingRef.current || gameState !== 'explore' || e.touches.length !== 1) return;
+      if (!isDraggingRef.current || gameState !== 'explore' || isArcheryMode || e.touches.length !== 1) return;
 
       const deltaX = e.touches[0].clientX - previousMousePositionRef.current.x;
       const deltaY = e.touches[0].clientY - previousMousePositionRef.current.y;
@@ -100,7 +108,7 @@ export default function CameraController({ gameState, playerRef, isArcheryMode }
       dom.removeEventListener('touchmove', handleTouchMove);
       dom.removeEventListener('touchend', handleMouseUp);
     };
-  }, [gl, gameState]);
+  }, [gl, gameState, isArcheryMode]);
 
   useFrame((state, delta) => {
     if (!playerRef.current) return;
@@ -113,10 +121,22 @@ export default function CameraController({ gameState, playerRef, isArcheryMode }
     currentLookAtRef.current.lerp(targetLookAt, delta * 12);
 
     if (isArcheryMode) {
-      // First-person over-the-shoulder Archery Firing Line camera
-      const archeryCamPos = new THREE.Vector3(18.0, 3.2, -35.2);
-      const archeryLookTarget = new THREE.Vector3(18.0, 2.8, -58.0);
-      camera.position.lerp(archeryCamPos, delta * 10);
+      // Static camera position (Zero camera translation/wobble) with smooth aim rotation
+      const yaw = archeryAimRef.yaw;
+      const pitch = archeryAimRef.pitch;
+      const playerY = getTerrainHeight(50.0, -36.5) + 1.2;
+
+      // Fixed over-the-shoulder camera position
+      const archeryCamPos = new THREE.Vector3(50.5, playerY + 1.75, -34.2);
+      
+      // Look target pans smoothly left/right (yaw) and up/down (pitch) to aim crosshair at target boards
+      const archeryLookTarget = new THREE.Vector3(
+        50.0 + yaw * 18.0,
+        playerY + 1.45 + pitch * 14.0,
+        -63.0
+      );
+
+      camera.position.copy(archeryCamPos);
       camera.lookAt(archeryLookTarget);
     } else if (gameState !== 'explore') {
       // Cinematic camera framing player character & village path clearly from front

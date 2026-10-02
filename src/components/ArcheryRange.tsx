@@ -1,6 +1,7 @@
 import React from 'react';
 import * as THREE from 'three';
 import { RigidBody } from '@react-three/rapier';
+import { Html } from '@react-three/drei';
 import { oakLogTexture, oakPlankTexture, cobblestoneTexture, stoneBrickTexture, roofShingleTexture } from '../utils/minecraftTextures';
 import { getTerrainHeight } from '../utils/terrain';
 
@@ -15,12 +16,14 @@ const roofDarkMat = new THREE.MeshStandardMaterial({ map: roofShingleTexture, ro
 const wallWhiteMat = new THREE.MeshStandardMaterial({ map: stoneBrickTexture, roughness: 0.65, color: 0xf5f5f0 });
 const goldMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.8, roughness: 0.2 });
 
-// Target Board Rings Materials
+// Target Board Rings Materials (Vibrant, high contrast colors visible from distance)
 const targetStandMat = new THREE.MeshStandardMaterial({ map: oakLogTexture, roughness: 0.8 });
-const targetOuterMat = new THREE.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.4 }); // Blue Ring
-const targetInnerMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.4 }); // Red Ring
-const targetCenterMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.3 }); // Yellow Bullseye
-const targetBackingMat = new THREE.MeshStandardMaterial({ map: oakPlankTexture, roughness: 0.8, color: 0xd4a373 }); // Straw/Wood Backing
+const targetOuterMat = new THREE.MeshToonMaterial({ color: 0x2563eb, side: THREE.DoubleSide }); // Bright Royal Blue Ring
+const targetInnerMat = new THREE.MeshToonMaterial({ color: 0xef4444, side: THREE.DoubleSide }); // Bright Red Ring
+const targetCenterMat = new THREE.MeshToonMaterial({ color: 0xfacc15, side: THREE.DoubleSide }); // Bright Sunburst Yellow Bullseye
+const targetWhiteMat = new THREE.MeshToonMaterial({ color: 0xffffff, side: THREE.DoubleSide }); // White Border Ring
+const targetBlackMat = new THREE.MeshBasicMaterial({ color: 0x111111, side: THREE.DoubleSide }); // Center Spot
+const targetBackingMat = new THREE.MeshStandardMaterial({ map: oakPlankTexture, roughness: 0.8, color: 0xfef08a }); // Light Straw Backing
 const targetFrameMat = new THREE.MeshStandardMaterial({ map: oakLogTexture, color: 0x3e2413, roughness: 0.7 });
 
 // Awning Materials for Market Stalls
@@ -31,54 +34,170 @@ const awningGreenMat = new THREE.MeshStandardMaterial({ color: 0x10b981, roughne
 // 🎯 3D TARGET BOARD COMPONENT
 export function TargetBoard({ position, rotation = [0, 0, 0] }: { position: [number, number, number]; rotation?: [number, number, number] }) {
   return (
-    <group position={position} rotation={rotation}>
-      {/* Wooden Legs Support */}
-      <mesh castShadow position={[-0.6, 0.9, -0.1]} rotation={[0.2, 0, 0]} material={targetStandMat}>
-        <cylinderGeometry args={[0.08, 0.08, 2.0, 8]} />
-      </mesh>
-      <mesh castShadow position={[0.6, 0.9, -0.1]} rotation={[0.2, 0, 0]} material={targetStandMat}>
-        <cylinderGeometry args={[0.08, 0.08, 2.0, 8]} />
-      </mesh>
-      <mesh castShadow position={[0, 0.9, -0.35]} rotation={[-0.3, 0, 0]} material={targetStandMat}>
-        <cylinderGeometry args={[0.07, 0.07, 2.1, 8]} />
-      </mesh>
+    <RigidBody type="fixed" colliders="cuboid" position={position} rotation={rotation}>
+      <group>
+        {/* Wooden Legs Support */}
+        <mesh castShadow position={[-0.6, 0.9, -0.1]} rotation={[0.2, 0, 0]} material={targetStandMat}>
+          <cylinderGeometry args={[0.08, 0.08, 2.0, 8]} />
+        </mesh>
+        <mesh castShadow position={[0.6, 0.9, -0.1]} rotation={[0.2, 0, 0]} material={targetStandMat}>
+          <cylinderGeometry args={[0.08, 0.08, 2.0, 8]} />
+        </mesh>
+        <mesh castShadow position={[0, 0.9, -0.35]} rotation={[-0.3, 0, 0]} material={targetStandMat}>
+          <cylinderGeometry args={[0.07, 0.07, 2.1, 8]} />
+        </mesh>
 
-      {/* Target Backing Shield */}
-      <group position={[0, 1.6, 0]}>
-        {/* Octagonal Outer Wooden Frame */}
-        <mesh castShadow receiveShadow material={targetFrameMat}>
-          <cylinderGeometry args={[1.2, 1.2, 0.22, 16]} />
-        </mesh>
-        {/* Straw Backing Disc */}
-        <mesh position={[0, 0, 0.05]} material={targetBackingMat}>
-          <cylinderGeometry args={[1.08, 1.08, 0.16, 32]} />
-        </mesh>
-        {/* Ring 3: Blue Outer Ring (Radius: 0.9m) */}
-        <mesh position={[0, 0, 0.12]} material={targetOuterMat}>
-          <cylinderGeometry args={[0.9, 0.9, 0.04, 32]} />
-        </mesh>
-        {/* Ring 2: Red Inner Ring (Radius: 0.55m) */}
-        <mesh position={[0, 0, 0.13]} material={targetInnerMat}>
-          <cylinderGeometry args={[0.55, 0.55, 0.04, 32]} />
-        </mesh>
-        {/* Ring 1: Yellow Bullseye Center (Radius: 0.25m) */}
-        <mesh position={[0, 0, 0.14]} material={targetCenterMat}>
-          <cylinderGeometry args={[0.25, 0.25, 0.04, 32]} />
-        </mesh>
-        {/* Center Spot */}
-        <mesh position={[0, 0, 0.15]} material={targetInnerMat}>
-          <cylinderGeometry args={[0.06, 0.06, 0.04, 16]} />
-        </mesh>
+        {/* Upright Target Board Shield facing Player (+Z) */}
+        <group position={[0, 1.6, 0]}>
+          {/* Octagonal Outer Wooden Backing Frame */}
+          <mesh castShadow receiveShadow material={targetFrameMat} position={[0, 0, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[1.25, 1.25, 0.18, 16]} />
+          </mesh>
+
+          {/* Straw Backing Face Disc */}
+          <mesh position={[0, 0, 0.10]} rotation={[Math.PI / 2, 0, 0]} material={targetBackingMat}>
+            <cylinderGeometry args={[1.15, 1.15, 0.04, 32]} />
+          </mesh>
+
+          {/* Ring 3: Bright White & Blue Outer Ring (Radius: 0.9m) */}
+          <mesh position={[0, 0, 0.13]} rotation={[Math.PI / 2, 0, 0]} material={targetWhiteMat}>
+            <cylinderGeometry args={[0.92, 0.92, 0.02, 32]} />
+          </mesh>
+          <mesh position={[0, 0, 0.14]} rotation={[Math.PI / 2, 0, 0]} material={targetOuterMat}>
+            <cylinderGeometry args={[0.85, 0.85, 0.02, 32]} />
+          </mesh>
+
+          {/* Ring 2: Bright Red Inner Ring (Radius: 0.55m) */}
+          <mesh position={[0, 0, 0.15]} rotation={[Math.PI / 2, 0, 0]} material={targetWhiteMat}>
+            <cylinderGeometry args={[0.57, 0.57, 0.02, 32]} />
+          </mesh>
+          <mesh position={[0, 0, 0.16]} rotation={[Math.PI / 2, 0, 0]} material={targetInnerMat}>
+            <cylinderGeometry args={[0.52, 0.52, 0.02, 32]} />
+          </mesh>
+
+          {/* Ring 1: Bright Yellow Bullseye Center (Radius: 0.25m) */}
+          <mesh position={[0, 0, 0.17]} rotation={[Math.PI / 2, 0, 0]} material={targetCenterMat}>
+            <cylinderGeometry args={[0.26, 0.26, 0.02, 32]} />
+          </mesh>
+
+          {/* Center Black Spot */}
+          <mesh position={[0, 0, 0.18]} rotation={[Math.PI / 2, 0, 0]} material={targetBlackMat}>
+            <cylinderGeometry args={[0.07, 0.07, 0.02, 16]} />
+          </mesh>
+        </group>
       </group>
-    </group>
+    </RigidBody>
   );
 }
 
-// 🏹 COMPLETE ARCHERY RANGE FIELD
+// 🏹 COMPLETE DEDICATED ARCHERY RANGE & TRAINING ARENA
 export function ArcheryRangeField({ position }: { position: [number, number, number] }) {
   const y = position[1];
   return (
     <group position={position}>
+      {/* ⛩️ Grand Entrance Wooden Archway & 3D Signboard (Entrance facing path at Z: +10.2) */}
+      <RigidBody type="fixed" colliders="cuboid" position={[0, 0, 10.2]}>
+        <group>
+          {/* Stone Plinth Foundation Bases */}
+          <mesh castShadow receiveShadow position={[-4.5, 0.4, 0]} material={stoneMat}>
+            <boxGeometry args={[0.9, 0.8, 0.9]} />
+          </mesh>
+          <mesh castShadow receiveShadow position={[4.5, 0.4, 0]} material={stoneMat}>
+            <boxGeometry args={[0.9, 0.8, 0.9]} />
+          </mesh>
+
+          {/* Heavy Timber Pillar Posts */}
+          <mesh castShadow position={[-4.5, 2.6, 0]} material={logMat}>
+            <cylinderGeometry args={[0.26, 0.32, 4.4, 8]} />
+          </mesh>
+          <mesh castShadow position={[4.5, 2.6, 0]} material={logMat}>
+            <cylinderGeometry args={[0.26, 0.32, 4.4, 8]} />
+          </mesh>
+
+          {/* Double Upper Crossbeams */}
+          <mesh castShadow position={[0, 4.6, 0]} material={logMat}>
+            <boxGeometry args={[9.8, 0.38, 0.38]} />
+          </mesh>
+          <mesh castShadow position={[0, 4.0, 0]} material={woodMat}>
+            <boxGeometry args={[9.4, 0.2, 0.25]} />
+          </mesh>
+
+          {/* Gabled Roof Canopy over Arch */}
+          <mesh castShadow position={[0, 5.0, 0]} material={roofRedMat}>
+            <boxGeometry args={[10.2, 0.25, 1.2]} />
+          </mesh>
+
+          {/* Archway Angle Corner Struts */}
+          <mesh castShadow position={[-3.8, 4.2, 0]} rotation={[0, 0, -Math.PI / 4]} material={logMat}>
+            <boxGeometry args={[1.2, 0.2, 0.2]} />
+          </mesh>
+          <mesh castShadow position={[3.8, 4.2, 0]} rotation={[0, 0, Math.PI / 4]} material={logMat}>
+            <boxGeometry args={[1.2, 0.2, 0.2]} />
+          </mesh>
+
+          {/* Entrance Lanterns */}
+          {[-4.5, 4.5].map((lx, li) => (
+            <group key={li} position={[lx, 3.2, 0.3]}>
+              <mesh material={logMat} castShadow>
+                <boxGeometry args={[0.15, 0.35, 0.15]} />
+              </mesh>
+              <pointLight color={0xffaa00} intensity={1.2} distance={6} position={[0, 0, 0.1]} />
+            </group>
+          ))}
+
+          {/* Decorative Archery Target Banners at Entrance */}
+          {[-5.1, 5.1].map((bx, bi) => (
+            <group key={bi} position={[bx, 2.2, 0]}>
+              <mesh material={targetInnerMat} castShadow>
+                <boxGeometry args={[0.6, 1.8, 0.08]} />
+              </mesh>
+              <mesh position={[0, 0, 0.05]} material={targetCenterMat}>
+                <circleGeometry args={[0.2, 12]} />
+              </mesh>
+            </group>
+          ))}
+
+          {/* Wooden Signboard Backing Plate */}
+          <mesh castShadow position={[0, 4.0, 0.2]} material={woodMat}>
+            <boxGeometry args={[5.8, 0.95, 0.14]} />
+          </mesh>
+
+          {/* 3D Interactive Signboard Badge facing path */}
+          <Html position={[0, 4.0, 0.3]} center distanceFactor={12} style={{ pointerEvents: 'none' }}>
+            <div className="building-3d-sign">
+              <span className="sign-icon">🎯</span>
+              <span className="sign-text">ARCHERY RANGE</span>
+            </div>
+          </Html>
+        </group>
+      </RigidBody>
+
+      {/* 🪨 Stone Pathway Pavers connecting driveway to firing line deck */}
+      {Array.from({ length: 6 }).map((_, pi) => {
+        const pz = 10.0 - pi * 0.45;
+        return (
+          <mesh key={`path-paver-${pi}`} receiveShadow position={[0, 0.04, pz]} material={cobbleMat}>
+            <boxGeometry args={[2.4, 0.06, 0.35]} />
+          </mesh>
+        );
+      })}
+
+      {/* 🪵 Spectator Bleachers & Viewing Benches */}
+      {[-6.2, 6.2].map((x, i) => (
+        <RigidBody key={`bleacher-${i}`} type="fixed" colliders="cuboid" position={[x, 0.4, 8.0]} rotation={[0, i === 0 ? Math.PI / 2 : -Math.PI / 2, 0]}>
+          <group>
+            <mesh castShadow material={woodMat}>
+              <boxGeometry args={[3.2, 0.12, 0.6]} />
+            </mesh>
+            {[-1.2, 1.2].map((bx, idx) => (
+              <mesh key={idx} position={[bx, -0.2, 0]} material={logMat}>
+                <cylinderGeometry args={[0.1, 0.1, 0.4, 6]} />
+              </mesh>
+            ))}
+          </group>
+        </RigidBody>
+      ))}
+
       {/* Wooden Firing Line Deck Platform */}
       <RigidBody type="fixed" colliders="cuboid">
         <mesh castShadow receiveShadow position={[0, 0.1, 8.0]} material={woodMat}>
@@ -106,6 +225,13 @@ export function ArcheryRangeField({ position }: { position: [number, number, num
         <mesh castShadow position={[3.5, 0.6, 0]} material={logMat}>
           <cylinderGeometry args={[0.25, 0.2, 0.8, 8]} />
         </mesh>
+        {/* Straw Target Practice Bales */}
+        <mesh castShadow position={[-2.2, 0.4, -0.5]} material={targetBackingMat}>
+          <boxGeometry args={[1.2, 0.8, 0.8]} />
+        </mesh>
+        <mesh castShadow position={[2.2, 0.4, -0.5]} material={targetBackingMat}>
+          <boxGeometry args={[1.2, 0.8, 0.8]} />
+        </mesh>
         {/* Decorative Archery Target Banners */}
         {[-4.2, 4.2].map((x, idx) => (
           <group key={idx} position={[x, 2.2, -1.0]}>
@@ -126,10 +252,35 @@ export function ArcheryRangeField({ position }: { position: [number, number, num
       <TargetBoard position={[-1.6, getTerrainHeight(position[0] - 1.6, position[2] - 24) - y, -24.0]} />
       <TargetBoard position={[1.6, getTerrainHeight(position[0] + 1.6, position[2] - 24) - y, -24.0]} />
 
+      {/* Side Safety Perimeter Fence Enclosure */}
+      {Array.from({ length: 7 }).map((_, i) => {
+        const fz = 6.0 - i * 5.0;
+        return (
+          <RigidBody key={`range-fence-${i}`} type="fixed" colliders="cuboid">
+            <group>
+              <mesh castShadow position={[-5.8, 0.7, fz]} material={logMat}>
+                <boxGeometry args={[0.12, 1.4, 0.12]} />
+              </mesh>
+              <mesh castShadow position={[-5.8, 0.9, fz - 2.5]} material={woodMat}>
+                <boxGeometry args={[0.08, 0.1, 5.0]} />
+              </mesh>
+              <mesh castShadow position={[5.8, 0.7, fz]} material={logMat}>
+                <boxGeometry args={[0.12, 1.4, 0.12]} />
+              </mesh>
+              <mesh castShadow position={[5.8, 0.9, fz - 2.5]} material={woodMat}>
+                <boxGeometry args={[0.08, 0.1, 5.0]} />
+              </mesh>
+            </group>
+          </RigidBody>
+        );
+      })}
+
       {/* Earth Backing Embankment Barrier behind targets */}
-      <mesh receiveShadow position={[0, 1.5, -28.0]} material={cobbleMat}>
-        <boxGeometry args={[16.0, 3.0, 2.0]} />
-      </mesh>
+      <RigidBody type="fixed" colliders="cuboid" position={[0, 1.5, -28.0]}>
+        <mesh receiveShadow material={cobbleMat}>
+          <boxGeometry args={[16.0, 3.0, 2.0]} />
+        </mesh>
+      </RigidBody>
     </group>
   );
 }
@@ -164,12 +315,28 @@ export function TownHall({ position, rotation = [0, 0, 0] }: { position: [number
             <coneGeometry args={[2.2, 2.8, 4]} />
           </mesh>
         </group>
-        {/* Entrance Pillars */}
+        {/* Entrance Pillars & Grand Entrance Door */}
         {[-3.5, 3.5].map((x, i) => (
           <mesh key={i} castShadow position={[x, 2.8, 4.8]} material={stoneMat}>
             <cylinderGeometry args={[0.35, 0.4, 3.2, 8]} />
           </mesh>
         ))}
+        {/* Double Entrance Doors */}
+        <mesh position={[0, 2.0, 4.2]} material={woodMat} castShadow>
+          <boxGeometry args={[2.0, 3.2, 0.12]} />
+        </mesh>
+        {/* Signboard */}
+        <group position={[0, 4.4, 4.25]}>
+          <mesh material={logMat} castShadow>
+            <boxGeometry args={[3.6, 0.65, 0.1]} />
+          </mesh>
+          <Html position={[0, 0, 0.08]} center distanceFactor={12} style={{ pointerEvents: 'none' }}>
+            <div className="building-3d-sign">
+              <span className="sign-icon">🏛️</span>
+              <span className="sign-text">TOWN HALL</span>
+            </div>
+          </Html>
+        </group>
       </group>
     </RigidBody>
   );
@@ -184,6 +351,22 @@ export function BakeryTavern({ position, rotation = [0, 0, 0] }: { position: [nu
         <mesh castShadow receiveShadow position={[0, 2.0, 0]} material={wallWhiteMat}>
           <boxGeometry args={[8.0, 4.0, 6.5]} />
         </mesh>
+        {/* Entrance Door facing path */}
+        <mesh position={[0, 1.4, 3.3]} material={woodMat} castShadow>
+          <boxGeometry args={[1.4, 2.4, 0.12]} />
+        </mesh>
+        {/* Signboard */}
+        <group position={[0, 3.2, 3.35]}>
+          <mesh material={logMat} castShadow>
+            <boxGeometry args={[3.4, 0.6, 0.1]} />
+          </mesh>
+          <Html position={[0, 0, 0.08]} center distanceFactor={12} style={{ pointerEvents: 'none' }}>
+            <div className="building-3d-sign">
+              <span className="sign-icon">🍞</span>
+              <span className="sign-text">BAKERY & TAVERN</span>
+            </div>
+          </Html>
+        </group>
         {/* Cozy Red Shingle Gabled Roof */}
         <mesh castShadow position={[0, 5.0, 0]} material={roofRedMat}>
           <boxGeometry args={[8.6, 2.0, 7.1]} />
@@ -207,27 +390,6 @@ export function BakeryTavern({ position, rotation = [0, 0, 0] }: { position: [nu
   );
 }
 
-// 🌿 HERBALIST COTTAGE
-export function HerbalistCottage({ position, rotation = [0, 0, 0] }: { position: [number, number, number]; rotation?: [number, number, number] }) {
-  return (
-    <RigidBody type="fixed" colliders="cuboid" position={position} rotation={rotation}>
-      <group>
-        {/* Timber Log Cabin Base */}
-        <mesh castShadow receiveShadow position={[0, 1.8, 0]} material={logMat}>
-          <boxGeometry args={[6.5, 3.6, 5.5]} />
-        </mesh>
-        {/* Thatched Dark Roof */}
-        <mesh castShadow position={[0, 4.2, 0]} material={roofDarkMat}>
-          <coneGeometry args={[4.8, 2.2, 4]} />
-        </mesh>
-        {/* Herb Garden Fence Box */}
-        <mesh castShadow position={[0, 0.3, 3.5]} material={woodMat}>
-          <boxGeometry args={[4.5, 0.6, 1.2]} />
-        </mesh>
-      </group>
-    </RigidBody>
-  );
-}
 
 // 🛒 VILLAGE MARKETPLACE STALLS
 export function MarketplaceStalls({ position, rotation = [0, 0, 0] }: { position: [number, number, number]; rotation?: [number, number, number] }) {
@@ -264,17 +426,12 @@ export function MarketplaceStalls({ position, rotation = [0, 0, 0] }: { position
 export default function VillageExpansion() {
   return (
     <group>
-      {/* 🎯 Archery Range Field (Located East of House 2 Education at X: 18, Z: -44) */}
-      <ArcheryRangeField position={[18, getTerrainHeight(18, -44), -44]} />
+      {/* 🎯 Dedicated Archery Range Arena & Sports Field (Secluded East Sector at X: 50, Z: -45) */}
+      <ArcheryRangeField position={[50, getTerrainHeight(50, -45), -45]} />
 
-      {/* 🏛️ Town Hall Manor (North-West Central near Road Junction) */}
-      <TownHall position={[-18, getTerrainHeight(-18, -25), -25]} rotation={[0, Math.PI / 6, 0]} />
+      {/* 🍞 Bakery & Tavern (South-East Riverside at X: 48, Z: 45 facing North towards path [50, 25]) */}
+      <BakeryTavern position={[48, getTerrainHeight(48, 45), 45]} rotation={[0, Math.atan2(2, -20), 0]} />
 
-      {/* 🍞 Bakery & Tavern (South-East near Orchard) */}
-      <BakeryTavern position={[28, getTerrainHeight(28, 35), 35]} rotation={[0, -Math.PI / 4, 0]} />
-
-      {/* 🌿 Herbalist Cottage (South-West near River & Bridge) */}
-      <HerbalistCottage position={[-24, getTerrainHeight(-24, 42), 42]} rotation={[0, Math.PI / 3, 0]} />
 
       {/* 🛒 Marketplace Stalls (Plaza Clearing near Center Well) */}
       <MarketplaceStalls position={[-4, getTerrainHeight(-4, 12), 12]} rotation={[0, 0, 0]} />

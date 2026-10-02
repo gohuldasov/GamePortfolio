@@ -392,6 +392,7 @@ canvas {
   padding: 3px;
   box-shadow: 4px 4px 0 #1b3a17;
   z-index: 70;
+  pointer-events: none;
   display: flex;
   align-items: center;
 }

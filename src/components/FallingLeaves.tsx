@@ -77,31 +77,31 @@ function create3DLeafGeometry(): THREE.BufferGeometry {
     // Central Stem Crease (Y dips down slightly for V-crease)
     0.0, -0.02, -0.18,  // 0: Petiole Base
     0.0, -0.015, -0.06, // 1: Lower Crease
-    0.0,  0.0,    0.06, // 2: Mid Crease
-    0.0,  0.02,   0.18, // 3: Tip Apex
+    0.0, 0.0, 0.06, // 2: Mid Crease
+    0.0, 0.02, 0.18, // 3: Tip Apex
 
     // Left Leaf Wing (Angles upward)
-   -0.09, 0.035, -0.08, // 4: Left Base
-   -0.13, 0.05,   0.02, // 5: Left Mid Wide Point
-   -0.07, 0.04,   0.12, // 6: Left Upper Taper
+    -0.09, 0.035, -0.08, // 4: Left Base
+    -0.13, 0.05, 0.02, // 5: Left Mid Wide Point
+    -0.07, 0.04, 0.12, // 6: Left Upper Taper
 
     // Right Leaf Wing (Angles upward)
     0.09, 0.035, -0.08, // 7: Right Base
-    0.13, 0.05,   0.02, // 8: Right Mid Wide Point
-    0.07, 0.04,   0.12, // 9: Right Upper Taper
+    0.13, 0.05, 0.02, // 8: Right Mid Wide Point
+    0.07, 0.04, 0.12, // 9: Right Upper Taper
   ]);
 
   const uvs = new Float32Array([
-    0.5, 0.0,  0.5, 0.33, 0.5, 0.66, 0.5, 1.0,
+    0.5, 0.0, 0.5, 0.33, 0.5, 0.66, 0.5, 1.0,
     0.15, 0.25, 0.0, 0.55, 0.2, 0.82,
     0.85, 0.25, 1.0, 0.55, 0.8, 0.82
   ]);
 
   const indices = [
     // Left Wing Triangles
-    0, 4, 1,   1, 4, 5,   1, 5, 2,   2, 5, 6,   2, 6, 3,
+    0, 4, 1, 1, 4, 5, 1, 5, 2, 2, 5, 6, 2, 6, 3,
     // Right Wing Triangles
-    0, 1, 7,   1, 8, 7,   1, 2, 8,   2, 9, 8,   2, 3, 9,
+    0, 1, 7, 1, 8, 7, 1, 2, 8, 2, 9, 8, 2, 3, 9,
   ];
 
   geom.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
