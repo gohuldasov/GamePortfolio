@@ -451,18 +451,8 @@ export default function World() {
           const v = curr.dist * 0.35;
           roadUvs.push(u, v);
 
-          // Edge color blending into grass terrain
-          const absW = Math.abs(wRatio);
-          let rCol = 1.0, gCol = 1.0, bCol = 1.0;
-          if (absW > 0.55) {
-            const blendFactor = (absW - 0.55) / 0.45;
-            const t = blendFactor * blendFactor * (3 - 2 * blendFactor);
-            rCol = 1.0 * (1 - t) + gR * t;
-            gCol = 1.0 * (1 - t) + gG * t;
-            bCol = 1.0 * (1 - t) + gB * t;
-          }
-
-          roadColors.push(rCol, gCol, bCol); // Item size 3 (RGB)
+          // Pure clean road vertex color (100% texture visibility, zero green streaks at intersections)
+          roadColors.push(1.0, 1.0, 1.0);
         }
       }
 
@@ -524,16 +514,8 @@ export default function World() {
         plazaNormals.push(0, 1, 0);
         plazaUvs.push(0.5 + (px / (PLAZA_R * 2)), 0.5 + (pz / (PLAZA_R * 2)));
 
-        let rCol = 1.0, gCol = 1.0, bCol = 1.0;
-        if (rRatio > 0.6) {
-          const blendFactor = (rRatio - 0.6) / 0.4;
-          const t = blendFactor * blendFactor * (3 - 2 * blendFactor);
-          rCol = 1.0 * (1 - t) + gR * t;
-          gCol = 1.0 * (1 - t) + gG * t;
-          bCol = 1.0 * (1 - t) + gB * t;
-        }
-
-        plazaColors.push(rCol, gCol, bCol);
+        // Pure clean plaza vertex color (zero green streaks)
+        plazaColors.push(1.0, 1.0, 1.0);
       }
     }
 

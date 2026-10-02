@@ -431,10 +431,6 @@ export default function VillageExpansion() {
 
       {/* 🍞 Bakery & Tavern (South-East Riverside at X: 48, Z: 45 facing North towards path [50, 25]) */}
       <BakeryTavern position={[48, getTerrainHeight(48, 45), 45]} rotation={[0, Math.atan2(2, -20), 0]} />
-
-
-      {/* 🛒 Marketplace Stalls (Plaza Clearing near Center Well) */}
-      <MarketplaceStalls position={[-4, getTerrainHeight(-4, 12), 12]} rotation={[0, 0, 0]} />
     </group>
   );
 }

@@ -36,8 +36,8 @@ const materials = {
   crystalMat: new THREE.MeshBasicMaterial({ color: 0x38bdf8 }),
   glassLit: new THREE.MeshBasicMaterial({ color: 0xffdb6d }),
   glassUnlit: new THREE.MeshStandardMaterial({ color: 0x99ccff, roughness: 0.2 }),
-  lanternFrame: new THREE.MeshStandardMaterial({ color: 0x2b2b2b, roughness: 0.4 }),
-  lanternGlass: new THREE.MeshBasicMaterial({ color: 0xffaa00 }),
+  lanternFrame: new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.3, metalness: 0.8 }),
+  lanternGlass: new THREE.MeshStandardMaterial({ color: 0xffbb33, emissive: 0xffaa00, emissiveIntensity: 1.5, roughness: 0.2 }),
   siloMat: new THREE.MeshStandardMaterial({ color: 0x5a6578, roughness: 0.5 }),
   siloDome: new THREE.MeshStandardMaterial({ color: 0x95a5b5, roughness: 0.3, metalness: 0.6 }),
 };
@@ -47,12 +47,12 @@ function WallLantern({ position }: { position: [number, number, number] }) {
   return (
     <group position={position}>
       <mesh material={materials.lanternFrame} castShadow>
-        <boxGeometry args={[0.22, 0.35, 0.22]} />
+        <boxGeometry args={[0.24, 0.38, 0.24]} />
       </mesh>
       <mesh material={materials.lanternGlass}>
-        <boxGeometry args={[0.16, 0.26, 0.16]} />
+        <boxGeometry args={[0.18, 0.30, 0.18]} />
       </mesh>
-      <pointLight color={0xffaa00} intensity={0.6} distance={4} decay={2} position={[0, 0, 0]} />
+      <pointLight color={0xffaa22} intensity={2.5} distance={8} decay={1.5} position={[0, 0, 0]} />
     </group>
   );
 }

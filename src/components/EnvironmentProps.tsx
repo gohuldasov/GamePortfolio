@@ -19,8 +19,79 @@ const rockMat = new THREE.MeshStandardMaterial({ map: cobblestoneTexture, roughn
 const crateMat = new THREE.MeshStandardMaterial({ map: crateTexture, roughness: 0.7 });
 const barrelMat = new THREE.MeshStandardMaterial({ map: barrelTexture, roughness: 0.7 });
 const fenceMat = new THREE.MeshStandardMaterial({ map: oakPlankTexture, roughness: 0.8, color: 0x8c5e34 });
-const lanternGlassMat = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
-const lanternFrameMat = new THREE.MeshStandardMaterial({ color: 0x2b2b2b, roughness: 0.4 });
+const lanternGlassUnlitMat = new THREE.MeshStandardMaterial({
+  color: 0x886633,
+  roughness: 0.5,
+  metalness: 0.2,
+});
+const lanternGlassLitMat = new THREE.MeshStandardMaterial({
+  color: 0xffbb33,
+  emissive: 0xff8800,
+  emissiveIntensity: 1.8,
+  roughness: 0.3,
+});
+const lanternBulbMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+const lanternFrameMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.3, metalness: 0.8 });
+
+// Ultra-soft, zero-edge radial light pool texture for seamless terrain blending
+const lampLightGlowTexture = (() => {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d')!;
+  const grad = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+  grad.addColorStop(0.0, 'rgba(255, 215, 120, 0.90)');
+  grad.addColorStop(0.2, 'rgba(255, 175, 60, 0.50)');
+  grad.addColorStop(0.45, 'rgba(255, 130, 30, 0.18)');
+  grad.addColorStop(0.7, 'rgba(255, 90, 10, 0.04)');
+  grad.addColorStop(1.0, 'rgba(0, 0, 0, 0.0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 256, 256);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.needsUpdate = true;
+  return tex;
+})();
+
+// Vertical light beam cone texture (soft atmospheric warm light ray shining downward)
+const lampLightBeamTexture = (() => {
+  const canvas = document.createElement('canvas');
+  canvas.width = 64;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d')!;
+  const grad = ctx.createLinearGradient(0, 0, 0, 256);
+  grad.addColorStop(0.0, 'rgba(255, 235, 150, 0.85)');
+  grad.addColorStop(0.15, 'rgba(255, 200, 90, 0.60)');
+  grad.addColorStop(0.45, 'rgba(255, 160, 50, 0.30)');
+  grad.addColorStop(0.75, 'rgba(255, 120, 20, 0.10)');
+  grad.addColorStop(1.0, 'rgba(255, 90, 0, 0.0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 64, 256);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.needsUpdate = true;
+  return tex;
+})();
+
+// Glowing Pure Round Light Mark / Circular Halo Texture for Street Light Tip
+const lampTipFlareTexture = (() => {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d')!;
+
+  // Smooth, pure round radial gradient glow bulb
+  const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+  grad.addColorStop(0.0, 'rgba(255, 255, 240, 1.0)');  // Pure bright white center core
+  grad.addColorStop(0.20, 'rgba(255, 225, 130, 0.95)'); // Luminous yellow inner ring
+  grad.addColorStop(0.45, 'rgba(255, 175, 60, 0.55)');  // Warm amber soft halo
+  grad.addColorStop(0.75, 'rgba(255, 120, 20, 0.15)');  // Smooth outer gradient edge
+  grad.addColorStop(1.0, 'rgba(0, 0, 0, 0.0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 128, 128);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.needsUpdate = true;
+  return tex;
+})();
 const bridgePlankMat = new THREE.MeshStandardMaterial({ map: oakPlankTexture, roughness: 0.8 });
 const bridgeRailMat = new THREE.MeshStandardMaterial({ map: oakLogTexture, roughness: 0.8 });
 const waterMat = new THREE.MeshStandardMaterial({ color: 0x2b7da8, roughness: 0.1, transparent: true, opacity: 0.85 });
@@ -149,25 +220,122 @@ function OverhangingCanopyTree({ position, scale = 1.0, seed = 0, hasFruit = fal
   );
 }
 
-// Glowing Lantern Post
-function GlowingLanternPost({ position }: { position: [number, number, number] }) {
+// Glowing Tall Street Lamp Post
+function GlowingLanternPost({ position, rotationY = 0, isNight = false }: { position: [number, number, number]; rotationY?: number; isNight?: boolean }) {
+  const targetRef = useRef<THREE.Object3D>(null);
+
   return (
-    <group position={position}>
-      <mesh castShadow receiveShadow material={trunkOakMat} position={[0, 1.4, 0]}>
-        <cylinderGeometry args={[0.08, 0.12, 2.8, 8]} />
+    <group position={position} rotation={[0, rotationY, 0]}>
+      {/* Heavy Stone Pedestal Foundation Base */}
+      <mesh castShadow receiveShadow material={rockMat} position={[0, 0.4, 0]}>
+        <cylinderGeometry args={[0.22, 0.28, 0.8, 8]} />
       </mesh>
-      <mesh castShadow receiveShadow material={fenceMat} position={[0.3, 2.6, 0]} rotation={[0, 0, Math.PI / 2]}>
-        <boxGeometry args={[0.1, 0.7, 0.1]} />
+
+      {/* Main Tall Column Post (Height 4.2m, top reaches 4.6m) */}
+      <mesh castShadow receiveShadow material={trunkOakMat} position={[0, 2.5, 0]}>
+        <cylinderGeometry args={[0.09, 0.14, 4.2, 8]} />
       </mesh>
-      <group position={[0.55, 2.3, 0]}>
-        <mesh material={lanternFrameMat} castShadow>
-          <boxGeometry args={[0.22, 0.35, 0.22]} />
+
+      {/* Decorative Wrought Iron Bands */}
+      <mesh castShadow material={lanternFrameMat} position={[0, 1.2, 0]}>
+        <cylinderGeometry args={[0.13, 0.13, 0.1, 8]} />
+      </mesh>
+      <mesh castShadow material={lanternFrameMat} position={[0, 2.8, 0]}>
+        <cylinderGeometry args={[0.11, 0.11, 0.1, 8]} />
+      </mesh>
+
+      {/* Decorative Top Cap */}
+      <mesh castShadow receiveShadow material={lanternFrameMat} position={[0, 4.65, 0]}>
+        <coneGeometry args={[0.18, 0.3, 8]} />
+      </mesh>
+
+      {/* Extended Horizontal Arm (Reaches 0.85m outward over the road edge) */}
+      <mesh castShadow receiveShadow material={fenceMat} position={[0.42, 4.3, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <boxGeometry args={[0.1, 0.9, 0.1]} />
+      </mesh>
+
+      {/* Diagonal Support Bracket */}
+      <mesh castShadow receiveShadow material={fenceMat} position={[0.2, 4.0, 0]} rotation={[0, 0, Math.PI / 4]}>
+        <boxGeometry args={[0.07, 0.5, 0.07]} />
+      </mesh>
+
+      {/* Hanging Chain / Fixture Mount */}
+      <mesh material={lanternFrameMat} position={[0.85, 4.05, 0]}>
+        <cylinderGeometry args={[0.02, 0.02, 0.4, 6]} />
+      </mesh>
+
+      {/* Main Lantern Housing (Hanging at Y = 3.65m) */}
+      <group position={[0.85, 3.65, 0]}>
+        {/* Metal Frame Cage */}
+        <mesh material={lanternFrameMat} castShadow position={[0, 0, 0]}>
+          <boxGeometry args={[0.32, 0.5, 0.32]} />
         </mesh>
-        <mesh material={lanternGlassMat}>
-          <boxGeometry args={[0.16, 0.26, 0.16]} />
+
+        {/* Glass Panels (Glowing in Dark Mode, Unlit during Day) */}
+        <mesh material={isNight ? lanternGlassLitMat : lanternGlassUnlitMat} position={[0, 0, 0]}>
+          <boxGeometry args={[0.24, 0.4, 0.24]} />
         </mesh>
-        <pointLight color={0xffaa00} intensity={1.2} distance={8} decay={2} position={[0, 0, 0]} />
+
+        {/* Inner Luminous White Filament Bulb (Active ONLY in Dark Mode) */}
+        {isNight && (
+          <mesh material={lanternBulbMat} position={[0, 0, 0]}>
+            <sphereGeometry args={[0.08, 8, 8]} />
+          </mesh>
+        )}
+
+        {/* 💡 Radiant Light Mark / Flare Spot directly on the Street Light Fixture */}
+        {isNight && (
+          <sprite position={[0, 0, 0]} scale={[1.8, 1.8, 1.0]}>
+            <spriteMaterial
+              map={lampTipFlareTexture}
+              transparent
+              opacity={0.95}
+              blending={THREE.AdditiveBlending}
+              depthWrite={false}
+            />
+          </sprite>
+        )}
+
+        {/* Warm Ambient Street Light Illumination (Seamless Ultra-Soft Blended Lighting) */}
+        {isNight && (
+          <>
+            <pointLight
+              color={0xffb74d}
+              intensity={5.8}
+              distance={20}
+              decay={1.2}
+              position={[0, 0, 0]}
+            />
+
+            <spotLight
+              color={0xffa726}
+              intensity={7.5}
+              distance={18}
+              angle={Math.PI / 2.5}
+              penumbra={1.0}
+              position={[0, 0, 0]}
+              target={targetRef.current || undefined}
+            />
+          </>
+        )}
       </group>
+
+      {/* SpotLight Target on Ground */}
+      <object3D ref={targetRef} position={[0.85, 0, 0]} />
+
+      {/* Seamless Golden Light Pool Decal on Ground (100% soft borderless blend) */}
+      {isNight && (
+        <mesh position={[0.85, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[11.0, 11.0]} />
+          <meshBasicMaterial
+            map={lampLightGlowTexture}
+            transparent
+            opacity={0.24}
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+          />
+        </mesh>
+      )}
     </group>
   );
 }
@@ -243,58 +411,106 @@ function CartAndStorage({ position }: { position: [number, number, number] }) {
 
 export default function EnvironmentProps({ isNight }: EnvironmentPropsProps) {
   const lanternPosts = useMemo(() => [
-    // Main South Highway & Bridge Entrance
-    { p: [4.5, 0, 52.0] as [number, number, number] },
-    { p: [-4.5, 0, 52.0] as [number, number, number] },
-    { p: [4.2, 0, 36.0] as [number, number, number] },
-    { p: [-4.2, 0, 36.0] as [number, number, number] },
-    { p: [4.2, 0, 20.0] as [number, number, number] },
-    { p: [-4.2, 0, 20.0] as [number, number, number] },
+    // ── MAIN SOUTH HIGHWAY (Side of Road) ──
+    { p: [-3.2, 0, 54.0] as [number, number, number], r: 0 },
+    { p: [3.2, 0, 54.0] as [number, number, number], r: Math.PI },
+    { p: [-3.2, 0, 42.0] as [number, number, number], r: 0 },
+    { p: [3.2, 0, 42.0] as [number, number, number], r: Math.PI },
+    { p: [-3.2, 0, 30.0] as [number, number, number], r: 0 },
+    { p: [3.2, 0, 30.0] as [number, number, number], r: Math.PI },
+    { p: [-3.2, 0, 18.0] as [number, number, number], r: 0 },
+    { p: [3.2, 0, 18.0] as [number, number, number], r: Math.PI },
+    { p: [-3.2, 0, 6.0] as [number, number, number], r: 0 },
+    { p: [3.2, 0, 6.0] as [number, number, number], r: Math.PI },
 
-    // Central Well Plaza Circle
-    { p: [6.5, 0, 6.5] as [number, number, number] },
-    { p: [-6.5, 0, 6.5] as [number, number, number] },
-    { p: [6.5, 0, -6.5] as [number, number, number] },
-    { p: [-6.5, 0, -6.5] as [number, number, number] },
+    // ── CENTRAL PLAZA CIRCLE ──
+    { p: [6.5, 0, 6.5] as [number, number, number], r: Math.PI * 1.25 },
+    { p: [-6.5, 0, 6.5] as [number, number, number], r: Math.PI * 0.25 },
+    { p: [6.5, 0, -6.5] as [number, number, number], r: Math.PI * 1.75 },
+    { p: [-6.5, 0, -6.5] as [number, number, number], r: Math.PI * 0.75 },
 
-    // House 1 (About Me) Path
-    { p: [-22.0, 0, -12.0] as [number, number, number] },
-    { p: [-45.0, 0, -25.0] as [number, number, number] },
-    { p: [-68.0, 0, -40.0] as [number, number, number] },
+    // ── HOUSE 4: PROJECTS ROAD (West - Side of Road) ──
+    { p: [-19.0, 0, -13.0] as [number, number, number], r: Math.PI / 2 },
+    { p: [-26.0, 0, -7.0] as [number, number, number], r: -Math.PI / 2 },
+    { p: [-33.0, 0, -13.0] as [number, number, number], r: Math.PI / 2 },
+    { p: [-40.0, 0, -7.0] as [number, number, number], r: -Math.PI / 2 },
+    { p: [-47.0, 0, -13.0] as [number, number, number], r: Math.PI / 2 },
+    { p: [-54.0, 0, -7.0] as [number, number, number], r: -Math.PI / 2 },
+    { p: [-61.0, 0, -13.0] as [number, number, number], r: Math.PI / 2 },
+    { p: [-68.0, 0, -7.0] as [number, number, number], r: -Math.PI / 2 },
+    { p: [-75.0, 0, -13.0] as [number, number, number], r: Math.PI / 2 },
 
-    // House 2 (Education) Path
-    { p: [-8.0, 0, -22.0] as [number, number, number] },
-    { p: [-14.0, 0, -45.0] as [number, number, number] },
-    { p: [-18.0, 0, -62.0] as [number, number, number] },
+    // ── HOUSE 1: ABOUT ME ROAD (South-West - Side of Road) ──
+    { p: [-18.0, 0, -14.5] as [number, number, number], r: Math.PI + 0.5 },
+    { p: [-28.0, 0, -13.5] as [number, number, number], r: 0.5 },
+    { p: [-35.0, 0, -22.5] as [number, number, number], r: Math.PI + 0.5 },
+    { p: [-42.0, 0, -28.0] as [number, number, number], r: 0.5 },
+    { p: [-52.0, 0, -32.0] as [number, number, number], r: Math.PI + 0.6 },
+    { p: [-60.0, 0, -42.0] as [number, number, number], r: 0.6 },
+    { p: [-70.0, 0, -48.0] as [number, number, number], r: Math.PI + 0.6 },
 
-    // House 3 (Skills) Path
-    { p: [25.0, 0, -8.0] as [number, number, number] },
-    { p: [50.0, 0, -15.0] as [number, number, number] },
-    { p: [68.0, 0, -18.0] as [number, number, number] },
+    // ── HOUSE 5: EXPERIENCE ROAD (North-West - Side of Road) ──
+    { p: [-12.0, 0, 5.0] as [number, number, number], r: -0.6 },
+    { p: [-18.0, 0, 18.0] as [number, number, number], r: Math.PI - 0.6 },
+    { p: [-30.0, 0, 16.0] as [number, number, number], r: -0.4 },
+    { p: [-38.0, 0, 20.0] as [number, number, number], r: Math.PI - 0.4 },
+    { p: [-50.0, 0, 22.0] as [number, number, number], r: -0.3 },
+    { p: [-62.0, 0, 34.0] as [number, number, number], r: Math.PI - 0.3 },
+    { p: [-72.0, 0, 30.0] as [number, number, number], r: -0.3 },
+    { p: [-76.0, 0, 39.0] as [number, number, number], r: Math.PI - 0.3 },
 
-    // House 4 (Projects) Path
-    { p: [-25.0, 0, -10.0] as [number, number, number] },
-    { p: [-50.0, 0, -10.0] as [number, number, number] },
-    { p: [-68.0, 0, -10.0] as [number, number, number] },
+    // ── HOUSE 2 & NORTH ROAD (Education & North Pond - Side of Road) ──
+    { p: [-3.2, 0, -10.0] as [number, number, number], r: 0 },
+    { p: [3.2, 0, -18.0] as [number, number, number], r: Math.PI },
+    { p: [-10.0, 0, -28.0] as [number, number, number], r: 0.6 },
+    { p: [-4.0, 0, -34.0] as [number, number, number], r: Math.PI + 0.6 },
+    { p: [-18.0, 0, -42.0] as [number, number, number], r: 0.3 },
+    { p: [-12.0, 0, -52.0] as [number, number, number], r: Math.PI + 0.3 },
+    { p: [-23.0, 0, -62.0] as [number, number, number], r: 0.2 },
+    { p: [-17.0, 0, -70.0] as [number, number, number], r: Math.PI + 0.2 },
 
-    // House 5 (Experience) Path
-    { p: [-20.0, 0, 15.0] as [number, number, number] },
-    { p: [-45.0, 0, 25.0] as [number, number, number] },
-    { p: [-68.0, 0, 32.0] as [number, number, number] },
+    // ── HOUSE 3: SKILLS ROAD (South-East - Side of Road) ──
+    { p: [12.0, 0, -1.0] as [number, number, number], r: -Math.PI / 2 },
+    { p: [18.0, 0, -9.0] as [number, number, number], r: Math.PI / 2 },
+    { p: [28.0, 0, -5.0] as [number, number, number], r: -Math.PI / 2 },
+    { p: [38.0, 0, -15.0] as [number, number, number], r: Math.PI / 2 },
+    { p: [48.0, 0, -11.0] as [number, number, number], r: -Math.PI / 2 },
+    { p: [58.0, 0, -20.0] as [number, number, number], r: Math.PI / 2 },
+    { p: [68.0, 0, -15.0] as [number, number, number], r: -Math.PI / 2 },
+    { p: [74.0, 0, -24.0] as [number, number, number], r: Math.PI / 2 },
 
-    // Developer Workshop (Church) Path
-    { p: [25.0, 0, 12.0] as [number, number, number] },
-    { p: [50.0, 0, 25.0] as [number, number, number] },
-    { p: [68.0, 0, 28.0] as [number, number, number] },
+    // ── WORKSHOP: CHURCH ROAD (North-East - Side of Road) ──
+    { p: [11.0, 0, 9.0] as [number, number, number], r: 0.4 },
+    { p: [17.0, 0, 5.0] as [number, number, number], r: Math.PI + 0.4 },
+    { p: [26.0, 0, 16.0] as [number, number, number], r: 0.4 },
+    { p: [36.0, 0, 14.0] as [number, number, number], r: Math.PI + 0.4 },
+    { p: [48.0, 0, 28.0] as [number, number, number], r: 0.4 },
+    { p: [58.0, 0, 24.0] as [number, number, number], r: Math.PI + 0.4 },
+    { p: [68.0, 0, 33.0] as [number, number, number], r: 0.4 },
+    { p: [74.0, 0, 26.0] as [number, number, number], r: Math.PI + 0.4 },
 
-    // Contact (Barn & Silo) & Archery Range Driveways
-    { p: [44.0, 0, -32.0] as [number, number, number] },
-    { p: [56.0, 0, -32.0] as [number, number, number] },
-    { p: [68.0, 0, -64.0] as [number, number, number] },
+    // ── WINDMILL & FARM DRIVEWAY ──
+    { p: [-52.0, 0, -32.0] as [number, number, number], r: 0 },
+    { p: [-62.0, 0, -46.0] as [number, number, number], r: Math.PI },
+    { p: [-74.0, 0, -60.0] as [number, number, number], r: 0 },
+    { p: [-84.0, 0, -74.0] as [number, number, number], r: Math.PI },
 
-    // Bakery & Tavern Deck
-    { p: [42.0, 0, 40.0] as [number, number, number] },
-    { p: [54.0, 0, 42.0] as [number, number, number] },
+    // ── ARCHERY RANGE & BARN/SILO DRIVEWAY ──
+    { p: [46.0, 0, -25.0] as [number, number, number], r: 0 },
+    { p: [54.0, 0, -32.0] as [number, number, number], r: Math.PI },
+    { p: [62.0, 0, -42.0] as [number, number, number], r: 0 },
+    { p: [70.0, 0, -54.0] as [number, number, number], r: Math.PI },
+    { p: [76.0, 0, -66.0] as [number, number, number], r: 0 },
+
+    // ── BAKERY & TAVERN DECK ──
+    { p: [44.0, 0, 32.0] as [number, number, number], r: -Math.PI / 2 },
+    { p: [52.0, 0, 42.0] as [number, number, number], r: Math.PI / 2 },
+    { p: [46.0, 0, 50.0] as [number, number, number], r: 0 },
+
+    // ── RECREATION DECK / POND DRIVEWAY ──
+    { p: [-12.0, 0, 14.0] as [number, number, number], r: -Math.PI / 2 },
+    { p: [-14.0, 0, 22.0] as [number, number, number], r: Math.PI / 2 },
+    { p: [-14.0, 0, 32.0] as [number, number, number], r: -Math.PI / 2 },
   ], []);
 
   const trees = useMemo(() => [
@@ -775,7 +991,7 @@ export default function EnvironmentProps({ isNight }: EnvironmentPropsProps) {
 
       {/* Glowing Lamp Posts */}
       {lanternPosts.map((l, idx) => (
-        <GlowingLanternPost key={idx} position={[l.p[0], getTerrainHeight(l.p[0], l.p[2]), l.p[2]]} />
+        <GlowingLanternPost key={idx} position={[l.p[0], getTerrainHeight(l.p[0], l.p[2]), l.p[2]]} rotationY={l.r} isNight={isNight} />
       ))}
 
       {/* ── SOUTH RIVER & SOUTH BRIDGE ── */}

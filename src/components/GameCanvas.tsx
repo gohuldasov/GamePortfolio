@@ -55,9 +55,9 @@ export default function GameCanvas({
   currentModal,
   setProximityText,
   isArcheryMode = false,
-  onScorePoints = () => {},
-  onPowerChange = () => {},
-  onShootArrow = () => {},
+  onScorePoints = () => { },
+  onPowerChange = () => { },
+  onShootArrow = () => { },
 }: GameCanvasProps) {
   // Player mesh reference used by follow camera to track coordinates
   const playerRef = useRef<THREE.Group>(null);

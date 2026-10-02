@@ -38,7 +38,7 @@ const materials = {
 export default function Player({ gameState, playerRef, setProximityText, currentModal, isArcheryMode }: PlayerProps) {
   const { camera } = useThree();
   const rbRef = useRef<any>(null);
-  
+
   // Track keys pressed
   const keysRef = useRef({ w: false, a: false, s: false, d: false, shift: false });
 
@@ -178,7 +178,7 @@ export default function Player({ gameState, playerRef, setProximityText, current
     // 3. Movement Logic & Archery Stance Positioning
     const keys = keysRef.current;
     const isWaving = gameState === 'loading' || gameState === 'title' || gameState === 'dialogue';
-    
+
     maxSpeed.current = keys.shift ? 7.2 : 4.2;
 
     if (isArcheryMode) {
@@ -215,7 +215,7 @@ export default function Player({ gameState, playerRef, setProximityText, current
 
       // Rotate player to face movement direction
       const targetAngle = Math.atan2(direction.x, direction.z);
-      
+
       // Interpolate rotation smoothly
       let diff = targetAngle - playerRef.current.rotation.y;
       while (diff < -Math.PI) diff += Math.PI * 2;
@@ -249,7 +249,7 @@ export default function Player({ gameState, playerRef, setProximityText, current
 
     // 4. Procedural Character Animation & Stances
     const isWalking = speed.current > 0.15;
-    
+
     if (isArcheryMode) {
       // 🎯 ARCHERY THIRD-PERSON STANCE
       const pitch = archeryAimRef.pitch;
@@ -426,7 +426,7 @@ export default function Player({ gameState, playerRef, setProximityText, current
               <mesh position={[0, -0.05, 0]} material={materials.skin}>
                 <cylinderGeometry args={[0.08, 0.09, 0.12, 12]} />
               </mesh>
-              
+
               {/* Main Human Head (Smooth rounded contour) */}
               <mesh castShadow position={[0, 0.22, 0]} material={materials.skin} scale={[1.0, 1.1, 0.95]}>
                 <sphereGeometry args={[0.22, 24, 24]} />

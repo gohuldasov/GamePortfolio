@@ -712,8 +712,26 @@ const BUILDING_OBSTACLES = [
   { cx: 28, cz: -62, radius: 8.0 },  // North Pond
 ];
 
-// 🚶 VILLAGER CITIZEN COMPONENT
-function Citizen({ position, pathPoints, speed = 1.0, color = 0xdd6b20 }: { position: [number, number, number]; pathPoints: [number, number][]; speed?: number; color?: number }) {
+// 🚶 VILLAGER CITIZEN COMPONENT WITH DETAILED FACIAL FEATURES
+interface CitizenProps {
+  position: [number, number, number];
+  pathPoints: [number, number][];
+  speed?: number;
+  color?: number;
+  hairColor?: number;
+  skinColor?: number;
+  accessory?: 'none' | 'hat' | 'hardhat' | 'hood';
+}
+
+function Citizen({
+  position,
+  pathPoints,
+  speed = 1.0,
+  color = 0xdd6b20,
+  hairColor = 0x4a3020,
+  skinColor = 0xfcc4b6,
+  accessory = 'none',
+}: CitizenProps) {
   const meshRef = useRef<THREE.Group>(null);
   const leftLegRef = useRef<THREE.Group>(null);
   const rightLegRef = useRef<THREE.Group>(null);
@@ -725,6 +743,16 @@ function Citizen({ position, pathPoints, speed = 1.0, color = 0xdd6b20 }: { posi
   const currPos = useRef(new THREE.Vector3(position[0], startY, position[2]));
 
   const clothMat = useMemo(() => new THREE.MeshToonMaterial({ color }), [color]);
+  const skinMat = useMemo(() => new THREE.MeshToonMaterial({ color: skinColor }), [skinColor]);
+  const hairMat = useMemo(() => new THREE.MeshToonMaterial({ color: hairColor }), [hairColor]);
+
+  // Facial Detail Materials
+  const eyeMat = useMemo(() => new THREE.MeshStandardMaterial({ color: 0x111115, roughness: 0.1, metalness: 0.8 }), []);
+  const eyeCatchMat = useMemo(() => new THREE.MeshBasicMaterial({ color: 0xffffff }), []);
+  const eyebrowMat = useMemo(() => new THREE.MeshBasicMaterial({ color: hairColor }), [hairColor]);
+  const mouthMat = useMemo(() => new THREE.MeshBasicMaterial({ color: 0xc15c48 }), []);
+  const blushMat = useMemo(() => new THREE.MeshToonMaterial({ color: 0xffa0a0, transparent: true, opacity: 0.65 }), []);
+  const accessoryMat = useMemo(() => new THREE.MeshStandardMaterial({ color: 0xf4a261, roughness: 0.4 }), []);
 
   useFrame((state, delta) => {
     if (!meshRef.current || pathPoints.length === 0) return;
@@ -771,32 +799,100 @@ function Citizen({ position, pathPoints, speed = 1.0, color = 0xdd6b20 }: { posi
       if (rightLegRef.current) rightLegRef.current.rotation.x = -swing * 0.45;
       if (leftArmRef.current) leftArmRef.current.rotation.x = -swing * 0.45;
       if (rightArmRef.current) rightArmRef.current.rotation.x = swing * 0.45;
-      
+
       meshRef.current.position.y = currPos.current.y + Math.abs(Math.sin(state.clock.getElapsedTime() * 14 * speed)) * 0.04;
     }
   });
 
   return (
     <group ref={meshRef} position={[position[0], startY, position[2]]} scale={1.15}>
+      {/* Torso Shirt */}
       <mesh castShadow receiveShadow position={[0, 0.72, 0]} material={clothMat}>
         <capsuleGeometry args={[0.24, 0.5, 8, 12]} />
       </mesh>
-      <mesh position={[0, 1.05, 0]} material={staticSkinMat}>
+      {/* Neck */}
+      <mesh position={[0, 1.05, 0]} material={skinMat}>
         <cylinderGeometry args={[0.08, 0.09, 0.1, 8]} />
       </mesh>
+      {/* Pants / Belt */}
       <mesh position={[0, 0.42, 0]} material={staticOldPantsMat}>
         <cylinderGeometry args={[0.22, 0.22, 0.14, 8]} />
       </mesh>
 
+      {/* Head Group */}
       <group position={[0, 1.25, 0]}>
-        <mesh castShadow position={[0, 0.2, 0]} material={staticSkinMat}>
+        {/* Skin Head Sphere */}
+        <mesh castShadow position={[0, 0.2, 0]} material={skinMat}>
           <sphereGeometry args={[0.24, 14, 14]} />
         </mesh>
-        <mesh position={[0, 0.24, 0]} material={staticHairMat}>
-          <sphereGeometry args={[0.25, 12, 12]} />
+        {/* Hair Cap */}
+        <mesh position={[0, 0.24, -0.02]} material={hairMat}>
+          <sphereGeometry args={[0.248, 12, 12]} />
         </mesh>
+
+        {/* ── 😃 EXPRESSIVE FACIAL FEATURES ── */}
+        {/* Glossy Black Eyes with Bright White Eye Catchlights */}
+        {[-0.08, 0.08].map((ex, i) => (
+          <group key={`eye-${i}`} position={[ex, 0.22, 0.20]}>
+            <mesh material={eyeMat}>
+              <sphereGeometry args={[0.032, 8, 8]} />
+            </mesh>
+            <mesh position={[0.008, 0.01, 0.025]} material={eyeCatchMat}>
+              <sphereGeometry args={[0.012, 6, 6]} />
+            </mesh>
+          </group>
+        ))}
+
+        {/* Eyebrows */}
+        {[-0.08, 0.08].map((ex, i) => (
+          <mesh key={`brow-${i}`} position={[ex, 0.27, 0.21]} rotation={[0, 0, i === 0 ? 0.05 : -0.05]} material={eyebrowMat}>
+            <boxGeometry args={[0.06, 0.015, 0.02]} />
+          </mesh>
+        ))}
+
+        {/* Cute Button Nose */}
+        <mesh position={[0, 0.18, 0.23]} material={skinMat}>
+          <sphereGeometry args={[0.035, 8, 8]} />
+        </mesh>
+
+        {/* Happy Cheerful Smile */}
+        <mesh position={[0, 0.12, 0.22]} rotation={[0, 0, 0]} material={mouthMat}>
+          <torusGeometry args={[0.045, 0.012, 6, 12, Math.PI]} />
+        </mesh>
+
+        {/* Rosy Cheek Blush */}
+        {[-0.13, 0.13].map((bx, i) => (
+          <mesh key={`blush-${i}`} position={[bx, 0.15, 0.19]} material={blushMat}>
+            <sphereGeometry args={[0.038, 8, 8]} />
+          </mesh>
+        ))}
+
+        {/* ── ACCESSORIES & HATS ── */}
+        {accessory === 'hat' && (
+          <group position={[0, 0.38, 0]}>
+            <mesh material={accessoryMat} castShadow>
+              <cylinderGeometry args={[0.36, 0.36, 0.04, 12]} />
+            </mesh>
+            <mesh position={[0, 0.12, 0]} material={accessoryMat} castShadow>
+              <cylinderGeometry args={[0.22, 0.24, 0.22, 12]} />
+            </mesh>
+          </group>
+        )}
+        {accessory === 'hardhat' && (
+          <group position={[0, 0.38, 0]}>
+            <mesh material={accessoryMat} castShadow>
+              <sphereGeometry args={[0.27, 12, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
+            </mesh>
+          </group>
+        )}
+        {accessory === 'hood' && (
+          <mesh position={[0, 0.25, -0.02]} material={clothMat} castShadow>
+            <sphereGeometry args={[0.27, 12, 12]} />
+          </mesh>
+        )}
       </group>
 
+      {/* Arms */}
       <group ref={leftArmRef} position={[-0.26, 0.88, 0]}>
         <mesh castShadow position={[0, -0.22, 0]} material={clothMat}>
           <capsuleGeometry args={[0.08, 0.34, 6, 8]} />
@@ -807,6 +903,8 @@ function Citizen({ position, pathPoints, speed = 1.0, color = 0xdd6b20 }: { posi
           <capsuleGeometry args={[0.08, 0.34, 6, 8]} />
         </mesh>
       </group>
+
+      {/* Legs */}
       <group ref={leftLegRef} position={[-0.12, 0.38, 0]}>
         <mesh castShadow position={[0, -0.22, 0]} material={staticOldPantsMat}>
           <capsuleGeometry args={[0.085, 0.36, 6, 8]} />
@@ -822,19 +920,63 @@ function Citizen({ position, pathPoints, speed = 1.0, color = 0xdd6b20 }: { posi
 }
 
 export default function NPCList() {
-  const mainRoadLoop: [number, number][] = [
-    [-18, 48], [-20, 32], [-10, 10], [0, 0], [14, 6], [24, 14], [28, 42], [22, 50], [28, 28], [14, 6], [0, 0], [-14, -3], [-26, -8], [-36, -20], [-36, -34], [-26, -8], [0, 0]
+  // Patrol Loops for Villagers across different sectors of the Map
+  const southHighwayLoop: [number, number][] = [
+    [-3.2, 54], [-3.2, 42], [-3.2, 30], [0, 0], [3.2, 30], [3.2, 42], [3.2, 54]
   ];
-
-  const northRoadLoop: [number, number][] = [
-    [0, 0], [0, -14], [-2, -26], [-6, -45], [-8, -55], [6, -55], [20, -52], [38, -52], [36, -42], [36, -20], [28, -8], [14, -3], [0, 0]
+  const northAcademyLoop: [number, number][] = [
+    [0, 0], [0, -14], [-10, -28], [-18, -42], [-20, -68], [-12, -52], [0, -20], [0, 0]
+  ];
+  const projectsAvenueLoop: [number, number][] = [
+    [0, 0], [-19, -13], [-33, -13], [-54, -7], [-75, -13], [-47, -13], [-19, -13], [0, 0]
+  ];
+  const skillsTechLoop: [number, number][] = [
+    [0, 0], [18, -9], [38, -15], [58, -20], [74, -24], [48, -11], [18, -9], [0, 0]
+  ];
+  const archeryArenaLoop: [number, number][] = [
+    [46, -25], [54, -32], [62, -42], [54, -32], [46, -25]
+  ];
+  const windmillFarmLoop: [number, number][] = [
+    [-52, -32], [-62, -46], [-74, -60], [-84, -74], [-62, -46], [-52, -32]
+  ];
+  const tavernDeckLoop: [number, number][] = [
+    [44, 32], [52, 42], [46, 50], [52, 42], [44, 32]
+  ];
+  const recreationPondLoop: [number, number][] = [
+    [-12, 14], [-14, 22], [-14, 32], [-14, 22], [-12, 14]
+  ];
+  const devWorkshopLoop: [number, number][] = [
+    [11, 9], [26, 16], [48, 28], [68, 33], [48, 28], [26, 16], [11, 9]
+  ];
+  const aboutMeCottageLoop: [number, number][] = [
+    [0, 0], [-18, -14.5], [-35, -22.5], [-70, -48], [-35, -22.5], [0, 0]
+  ];
+  const citadelCastleLoop: [number, number][] = [
+    [-12, 5], [-30, 16], [-50, 22], [-76, 39], [-50, 22], [-12, 5]
+  ];
+  const barnSiloLoop: [number, number][] = [
+    [54, -32], [62, -42], [70, -54], [76, -66], [62, -42]
+  ];
+  const centralPlazaLoop: [number, number][] = [
+    [6.5, 6.5], [-6.5, 6.5], [-6.5, -6.5], [6.5, -6.5]
   ];
 
   return (
     <group>
-      {/* 🚶 Wandering Villagers */}
-      <Citizen position={[-18, 0.1, 48]} pathPoints={mainRoadLoop} speed={1.2} color={0x06d6a0} />
-      <Citizen position={[0, 0.1, 0]} pathPoints={northRoadLoop} speed={1.0} color={0xef476f} />
+      {/* 🚶 13 Expressive Animated Villagers & People */}
+      <Citizen position={[-3.2, 0.1, 54]} pathPoints={southHighwayLoop} speed={1.2} color={0x06d6a0} hairColor={0x2b2b2b} />
+      <Citizen position={[0, 0.1, 0]} pathPoints={northAcademyLoop} speed={1.0} color={0xef476f} hairColor={0xe9c46a} />
+      <Citizen position={[0, 0.1, 0]} pathPoints={projectsAvenueLoop} speed={1.15} color={0x3a86ff} hairColor={0x4a3020} accessory="hardhat" />
+      <Citizen position={[0, 0.1, 0]} pathPoints={skillsTechLoop} speed={1.05} color={0x8338ec} hairColor={0x6c584c} />
+      <Citizen position={[46, 0.1, -25]} pathPoints={archeryArenaLoop} speed={1.25} color={0x2a9d8f} hairColor={0x1b4332} accessory="hood" />
+      <Citizen position={[-52, 0.1, -32]} pathPoints={windmillFarmLoop} speed={0.95} color={0xe9c46a} hairColor={0x8c5e34} accessory="hat" />
+      <Citizen position={[44, 0.1, 32]} pathPoints={tavernDeckLoop} speed={1.0} color={0xf4a261} hairColor={0x222222} accessory="hat" />
+      <Citizen position={[-12, 0.1, 14]} pathPoints={recreationPondLoop} speed={1.1} color={0xff006e} hairColor={0xd4a373} />
+      <Citizen position={[11, 0.1, 9]} pathPoints={devWorkshopLoop} speed={1.05} color={0x7209b7} hairColor={0x457b9d} />
+      <Citizen position={[0, 0.1, 0]} pathPoints={aboutMeCottageLoop} speed={1.1} color={0x4361ee} hairColor={0x8d99ae} />
+      <Citizen position={[-12, 0.1, 5]} pathPoints={citadelCastleLoop} speed={1.15} color={0x3f37c9} hairColor={0x2b2b2b} accessory="hood" />
+      <Citizen position={[54, 0.1, -32]} pathPoints={barnSiloLoop} speed={1.0} color={0xd4a373} hairColor={0x6b705c} />
+      <Citizen position={[6.5, 0.1, 6.5]} pathPoints={centralPlazaLoop} speed={0.9} color={0xffb703} hairColor={0x9a031e} />
 
       {/* 🐔 Chickens Roaming inside Chicken Coop */}
       <Chicken position={[42.5, 0.1, -31]} seed={1} />
