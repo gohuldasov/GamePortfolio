@@ -1,5 +1,6 @@
 import React from 'react';
 import * as THREE from 'three';
+import { RigidBody, CylinderCollider, CuboidCollider } from '@react-three/rapier';
 import { oakPlankTexture, stoneBrickTexture, cobblestoneTexture } from '../utils/minecraftTextures';
 import { getTerrainHeight, WATER_SURFACE_Y } from '../utils/terrain';
 
@@ -13,7 +14,7 @@ const woodPoleMat = new THREE.MeshStandardMaterial({ map: oakPlankTexture, rough
 // Voxel Minecraft park bench
 function Bench({ position, rotation = [0, 0, 0] }: { position: [number, number, number]; rotation?: [number, number, number] }) {
   return (
-    <group position={position} rotation={rotation}>
+    <RigidBody type="fixed" colliders={false} position={position} rotation={rotation}>
       <mesh castShadow position={[0, 0.38, 0]} material={benchWoodMat}>
         <boxGeometry args={[1.4, 0.08, 0.48]} />
       </mesh>
@@ -26,14 +27,15 @@ function Bench({ position, rotation = [0, 0, 0] }: { position: [number, number, 
       <mesh position={[0.6, 0.2, 0]} material={benchMetalMat}>
         <boxGeometry args={[0.08, 0.4, 0.48]} />
       </mesh>
-    </group>
+      <CuboidCollider args={[0.7, 0.4, 0.25]} position={[0, 0.4, 0]} />
+    </RigidBody>
   );
 }
 
 // 🚰 CENTER WELL COMPONENT (Center of Blueprint)
 function CenterWell({ position }: { position: [number, number, number] }) {
   return (
-    <group position={position}>
+    <RigidBody type="fixed" colliders={false} position={position}>
       {/* Circular Stone Wall Basin */}
       <mesh castShadow receiveShadow position={[0, 0.6, 0]} material={stoneMat}>
         <cylinderGeometry args={[1.8, 2.0, 1.2, 16]} />
@@ -57,14 +59,16 @@ function CenterWell({ position }: { position: [number, number, number] }) {
       <mesh position={[0, 3.4, 0]} material={benchWoodMat} castShadow rotation={[0, Math.PI / 4, 0]}>
         <coneGeometry args={[2.2, 1.0, 4]} />
       </mesh>
-    </group>
+      {/* Rigid Physics Cylinder Collider preventing walking through the center object */}
+      <CylinderCollider args={[2.0, 2.1]} position={[0, 2.0, 0]} />
+    </RigidBody>
   );
 }
 
 // 🏖️ RECREATION POND DOCK & UMBRELLA (South Center of Blueprint)
 function RecreationPondDeck({ position }: { position: [number, number, number] }) {
   return (
-    <group position={position}>
+    <RigidBody type="fixed" colliders={false} position={position}>
       {/* Wooden Dock Platform extending into Pond */}
       <mesh castShadow receiveShadow position={[0, 0.1, 0]} material={benchWoodMat}>
         <boxGeometry args={[3.2, 0.16, 2.4]} />
@@ -84,7 +88,8 @@ function RecreationPondDeck({ position }: { position: [number, number, number] }
           <coneGeometry args={[1.5, 0.6, 8]} />
         </mesh>
       </group>
-    </group>
+      <CuboidCollider args={[1.6, 0.2, 1.2]} position={[0, 0.1, 0]} />
+    </RigidBody>
   );
 }
 

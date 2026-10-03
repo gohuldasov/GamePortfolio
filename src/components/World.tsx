@@ -125,8 +125,8 @@ function GrassMeadow() {
       new THREE.Color(0x81c784),
     ];
 
-    for (let gx = -104; gx <= 104; gx += 0.65) {
-      for (let gz = -96; gz <= 84; gz += 0.65) {
+    for (let gx = -104; gx <= 104; gx += 1.15) {
+      for (let gz = -96; gz <= 84; gz += 1.15) {
         // Skip Recreation Pond
         const dRecPond = Math.hypot(gx - (-28), gz - 32);
         if (dRecPond < 11.5) continue;

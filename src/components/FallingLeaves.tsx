@@ -7,7 +7,7 @@ interface FallingLeavesProps {
   treePositions: Array<{ p: [number, number, number]; s: number; seed: number; fruit: boolean }>;
 }
 
-const LEAF_COUNT = 600;
+const LEAF_COUNT = 200;
 
 // Create a procedurally generated leaf texture with fine leaf vein patterns & smooth alpha borders
 function createProceduralLeafTexture(): THREE.CanvasTexture {
@@ -269,7 +269,7 @@ export default function FallingLeaves({ treePositions }: FallingLeavesProps) {
     <instancedMesh
       ref={instancedMeshRef}
       args={[leafGeometry, leafMaterial, LEAF_COUNT]}
-      castShadow
+      castShadow={false}
       receiveShadow={false}
     />
   );

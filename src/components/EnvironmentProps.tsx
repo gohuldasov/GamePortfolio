@@ -1,7 +1,7 @@
 import React, { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { RigidBody, CuboidCollider } from '@react-three/rapier';
+import { RigidBody, CuboidCollider, CylinderCollider } from '@react-three/rapier';
 import { oakLogTexture, oakPlankTexture, crateTexture, barrelTexture, leafTexture, cobblestoneTexture } from '../utils/minecraftTextures';
 import { getTerrainHeight, WATER_SURFACE_Y } from '../utils/terrain';
 import FallingLeaves from './FallingLeaves';
@@ -101,16 +101,6 @@ const fruitOrange = new THREE.MeshStandardMaterial({ color: 0xffb703, roughness:
 
 // Stylized Canopy Tree with Realistic Mid-Trunk Sprawling Boughs & Branches
 function OverhangingCanopyTree({ position, scale = 1.0, seed = 0, hasFruit = false }: { position: [number, number, number]; scale?: number; seed?: number; hasFruit?: boolean }) {
-  const foliageRef = useRef<THREE.Group>(null);
-
-  useFrame((state) => {
-    if (foliageRef.current) {
-      const time = state.clock.getElapsedTime();
-      foliageRef.current.rotation.z = Math.sin(time * 0.7 + seed) * 0.022;
-      foliageRef.current.rotation.x = Math.cos(time * 0.5 + seed) * 0.018;
-    }
-  });
-
   return (
     <RigidBody type="fixed" colliders={false} position={position} scale={scale}>
       <group>
@@ -188,7 +178,7 @@ function OverhangingCanopyTree({ position, scale = 1.0, seed = 0, hasFruit = fal
         </group>
 
         {/* Dynamic Upper Foliage Canopy */}
-        <group ref={foliageRef} position={[0, 7.4, 0]}>
+        <group position={[0, 7.4, 0]}>
           {/* Main Crown */}
           <mesh castShadow material={leafOakMain} position={[0, 0.6, 0]} scale={[1.3, 1.05, 1.3]}>
             <dodecahedronGeometry args={[3.0, 1]} />
@@ -221,11 +211,9 @@ function OverhangingCanopyTree({ position, scale = 1.0, seed = 0, hasFruit = fal
 }
 
 // Glowing Tall Street Lamp Post
-function GlowingLanternPost({ position, rotationY = 0, isNight = false }: { position: [number, number, number]; rotationY?: number; isNight?: boolean }) {
-  const targetRef = useRef<THREE.Object3D>(null);
-
+function GlowingLanternPost({ position, rotationY = 0, isNight = false, hasLight = false }: { position: [number, number, number]; rotationY?: number; isNight?: boolean; hasLight?: boolean }) {
   return (
-    <group position={position} rotation={[0, rotationY, 0]}>
+    <RigidBody type="fixed" colliders={false} position={position} rotation={[0, rotationY, 0]}>
       {/* Heavy Stone Pedestal Foundation Base */}
       <mesh castShadow receiveShadow material={rockMat} position={[0, 0.4, 0]}>
         <cylinderGeometry args={[0.22, 0.28, 0.8, 8]} />
@@ -285,58 +273,46 @@ function GlowingLanternPost({ position, rotationY = 0, isNight = false }: { posi
 
         {/* 💡 Radiant Light Mark / Flare Spot directly on the Street Light Fixture */}
         {isNight && (
-          <sprite position={[0, 0, 0]} scale={[1.8, 1.8, 1.0]}>
+          <sprite position={[0, 0, 0]} scale={[3.2, 3.2, 1.0]}>
             <spriteMaterial
               map={lampTipFlareTexture}
               transparent
-              opacity={0.95}
+              opacity={0.98}
               blending={THREE.AdditiveBlending}
               depthWrite={false}
             />
           </sprite>
         )}
 
-        {/* Warm Ambient Street Light Illumination (Seamless Ultra-Soft Blended Lighting) */}
-        {isNight && (
-          <>
-            <pointLight
-              color={0xffb74d}
-              intensity={5.8}
-              distance={20}
-              decay={1.2}
-              position={[0, 0, 0]}
-            />
-
-            <spotLight
-              color={0xffa726}
-              intensity={7.5}
-              distance={18}
-              angle={Math.PI / 2.5}
-              penumbra={1.0}
-              position={[0, 0, 0]}
-              target={targetRef.current || undefined}
-            />
-          </>
+        {/* Dynamic Point Light on Key Junction Lamp Posts */}
+        {isNight && hasLight && (
+          <pointLight
+            color={0xffb74d}
+            intensity={3.8}
+            distance={20}
+            decay={1.4}
+            position={[0, 0, 0]}
+          />
         )}
       </group>
 
-      {/* SpotLight Target on Ground */}
-      <object3D ref={targetRef} position={[0.85, 0, 0]} />
-
-      {/* Seamless Golden Light Pool Decal on Ground (100% soft borderless blend) */}
+      {/* Seamless Golden Light Pool Decal on Ground */}
       {isNight && (
         <mesh position={[0.85, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <planeGeometry args={[11.0, 11.0]} />
+          <planeGeometry args={[14.0, 14.0]} />
           <meshBasicMaterial
             map={lampLightGlowTexture}
             transparent
-            opacity={0.24}
+            opacity={0.55}
             blending={THREE.AdditiveBlending}
             depthWrite={false}
           />
         </mesh>
       )}
-    </group>
+
+      {/* Solid Physics Collider preventing player from walking through the post */}
+      <CylinderCollider args={[2.3, 0.35]} position={[0, 2.3, 0]} />
+    </RigidBody>
   );
 }
 
@@ -371,21 +347,22 @@ function WheatField({ position }: { position: [number, number, number] }) {
 // 🐔 CHICKEN COOP COMPONENT
 function ChickenCoop({ position }: { position: [number, number, number] }) {
   return (
-    <group position={position}>
+    <RigidBody type="fixed" colliders={false} position={position}>
       <mesh castShadow receiveShadow position={[0, 0.9, 0]} material={fenceMat}>
         <boxGeometry args={[2.4, 1.8, 2.0]} />
       </mesh>
       <mesh castShadow position={[0, 2.0, 0]} rotation={[0, Math.PI / 4, 0]} material={trunkOakMat}>
         <coneGeometry args={[2.0, 0.8, 4]} />
       </mesh>
-    </group>
+      <CuboidCollider args={[1.2, 1.2, 1.0]} position={[0, 1.2, 0]} />
+    </RigidBody>
   );
 }
 
 // 🛒 CART & STORAGE COMPONENT
 function CartAndStorage({ position }: { position: [number, number, number] }) {
   return (
-    <group position={position}>
+    <RigidBody type="fixed" colliders={false} position={position}>
       <mesh castShadow receiveShadow position={[0, 1.4, 0]} material={fenceMat}>
         <boxGeometry args={[3.6, 2.8, 2.8]} />
       </mesh>
@@ -405,7 +382,8 @@ function CartAndStorage({ position }: { position: [number, number, number] }) {
       <mesh castShadow position={[2.2, 1.2, 0.8]} material={crateMat}>
         <boxGeometry args={[0.7, 0.7, 0.7]} />
       </mesh>
-    </group>
+      <CuboidCollider args={[2.0, 1.4, 1.6]} position={[0, 1.4, 0]} />
+    </RigidBody>
   );
 }
 
@@ -991,7 +969,7 @@ export default function EnvironmentProps({ isNight }: EnvironmentPropsProps) {
 
       {/* Glowing Lamp Posts */}
       {lanternPosts.map((l, idx) => (
-        <GlowingLanternPost key={idx} position={[l.p[0], getTerrainHeight(l.p[0], l.p[2]), l.p[2]]} rotationY={l.r} isNight={isNight} />
+        <GlowingLanternPost key={idx} position={[l.p[0], getTerrainHeight(l.p[0], l.p[2]), l.p[2]]} rotationY={l.r} isNight={isNight} hasLight={idx % 6 === 0} />
       ))}
 
       {/* ── SOUTH RIVER & SOUTH BRIDGE ── */}

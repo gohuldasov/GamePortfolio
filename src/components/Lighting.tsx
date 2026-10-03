@@ -18,14 +18,16 @@ export default function Lighting({ isNight }: LightingProps) {
   const ambientLightRef = useRef<THREE.AmbientLight>(null);
   const hemiLightRef = useRef<THREE.HemisphereLight>(null);
   const sunMeshRef = useRef<THREE.Mesh>(null);
+  const villageLightRef = useRef<THREE.PointLight>(null);
 
   useFrame((_, delta) => {
-    const targetSunColor = isNight ? new THREE.Color('#4361ee') : new THREE.Color('#fff0d4');
-    const targetSunIntensity = isNight ? 0.35 : 2.6;
-    const targetAmbientColor = isNight ? new THREE.Color('#0f172a') : new THREE.Color('#fff6e5');
-    const targetAmbientIntensity = isNight ? 0.4 : 1.25;
-    const targetHemiSkyColor = isNight ? new THREE.Color('#020617') : new THREE.Color('#70b5f5');
-    const targetHemiGroundColor = isNight ? new THREE.Color('#052e16') : new THREE.Color('#4c9e38');
+    const targetSunColor = isNight ? new THREE.Color('#60a5fa') : new THREE.Color('#fff0d4');
+    const targetSunIntensity = isNight ? 1.2 : 2.6;
+    const targetAmbientColor = isNight ? new THREE.Color('#1e293b') : new THREE.Color('#fff6e5');
+    const targetAmbientIntensity = isNight ? 0.9 : 1.25;
+    const targetHemiSkyColor = isNight ? new THREE.Color('#1e3a8a') : new THREE.Color('#70b5f5');
+    const targetHemiGroundColor = isNight ? new THREE.Color('#064e3b') : new THREE.Color('#4c9e38');
+    const targetVillageLightIntensity = isNight ? 4.8 : 0;
 
     if (dirLightRef.current) {
       dirLightRef.current.color.lerp(targetSunColor, delta * 3);
@@ -46,6 +48,9 @@ export default function Lighting({ isNight }: LightingProps) {
       hemiLightRef.current.color.lerp(targetHemiSkyColor, delta * 3);
       hemiLightRef.current.groundColor.lerp(targetHemiGroundColor, delta * 3);
     }
+    if (villageLightRef.current) {
+      villageLightRef.current.intensity = THREE.MathUtils.lerp(villageLightRef.current.intensity, targetVillageLightIntensity, delta * 3);
+    }
   });
 
   return (
@@ -65,15 +70,25 @@ export default function Lighting({ isNight }: LightingProps) {
         intensity={2.6}
         position={[20, 45, 15]}
         castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
         shadow-camera-near={0.5}
-        shadow-camera-far={260}
-        shadow-camera-left={-125}
-        shadow-camera-right={125}
-        shadow-camera-top={125}
-        shadow-camera-bottom={-125}
+        shadow-camera-far={180}
+        shadow-camera-left={-85}
+        shadow-camera-right={85}
+        shadow-camera-top={85}
+        shadow-camera-bottom={-85}
         shadow-bias={-0.0005}
+      />
+
+      {/* Central Village Warm Night Illumination Light */}
+      <pointLight
+        ref={villageLightRef}
+        color={0xffb74d}
+        intensity={0}
+        distance={95}
+        decay={1.2}
+        position={[0, 12, 0]}
       />
 
       {/* Celestial Sun / Moon in the Sky */}
